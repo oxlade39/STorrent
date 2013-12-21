@@ -1,24 +1,17 @@
 package io.github.oxlade39.storrent.announce
 
-import akka.actor.{ActorLogging, Actor}
-import java.net._
-import io.github.oxlade39.storrent.core._
 import akka.util.ByteString
+import io.github.oxlade39.storrent.peer.{Peer, PeerId}
+import java.net.{URLEncoder, InetSocketAddress, URL, InetAddress}
+import io.github.oxlade39.storrent.core._
 import org.slf4j.LoggerFactory
 import scala.Some
 import io.github.oxlade39.storrent.core.BMap
-import io.github.oxlade39.storrent.core.BInt
-import io.github.oxlade39.storrent.peer.{PeerId, Peer}
+import io.github.oxlade39.storrent.peer.Peer
 
-object TcpTrackerClient {
-
-}
-
-class TcpTrackerClient(uri: URI) extends Actor with ActorLogging {
-  def receive = ???
-}
-
-
+/**
+ * @author dan
+ */
 sealed trait Message {
   def urlEncode: String ⇒ String = s ⇒ URLEncoder.encode(s, Torrent.encoding)
   def urlEncodeB: ByteString ⇒ String = b ⇒ urlEncode(b.decodeString(Torrent.encoding))
@@ -103,14 +96,14 @@ case class TrackerRequest(
 sealed trait TrackerResponse extends Message
 
 case class NormalTrackerResponse(
-  clientRequestInterval: Int,
-  minimumAnnounceInterval: Option[Int] = None,
-  trackerId: Option[String] = None,
-  numberOfCompletedPeers: Int,
-  numberOfUncompletedPeers: Int,
-  peers: List[Peer],
-  warningMessage: Option[String] = None
-) extends TrackerResponse
+                                  clientRequestInterval: Int,
+                                  minimumAnnounceInterval: Option[Int] = None,
+                                  trackerId: Option[String] = None,
+                                  numberOfCompletedPeers: Int,
+                                  numberOfUncompletedPeers: Int,
+                                  peers: List[Peer],
+                                  warningMessage: Option[String] = None
+                                  ) extends TrackerResponse
 
 object NormalTrackerResponse {
   val logger = LoggerFactory.getLogger(NormalTrackerResponse.getClass)
