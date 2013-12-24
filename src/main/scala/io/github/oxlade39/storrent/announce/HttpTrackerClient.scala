@@ -22,12 +22,12 @@ class HttpTrackerClient(url: URL, request: TrackerRequest)
 
   def makeRequest() {
     val urlWithParams = request.appendParams(url).toString
-    log.debug("requesting {}", urlWithParams)
+    log.info("requesting {}", urlWithParams)
     val response = httpClient getBytesFrom urlWithParams
     response map parseResponse pipeTo self
   }
 
-  def httpClient: HttpClient = RealHttpClientComponent
+  def httpClient: HttpClient = new RawHttpClientComponent
 
   def parseResponse: ByteString => Option[TrackerResponse] = bs =>
     NormalTrackerResponse.parse(bs).orElse(FailureTrackerResponse.parse(bs))

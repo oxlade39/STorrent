@@ -135,14 +135,7 @@ case object BBytesBytesConsumer extends BValueByteConsumer[BBytes] {
       None
     } else {
       self.getBytes(rawSizeBytes)
-      val actualSize = try {
-        ByteString(rawSizeBytes).utf8String.toInt
-      } catch {
-        case e: NumberFormatException => {
-          println(ByteString(rawSizeBytes).utf8String)
-          throw e
-        }
-      }
+      val actualSize = ByteString(rawSizeBytes).utf8String.toInt
       // drop ':'
       self.drop(1)
       val actualBytes = new Array[Byte](actualSize)

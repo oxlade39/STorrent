@@ -1,8 +1,10 @@
 package io.github.oxlade39.storrent.announce
 
 import io.github.oxlade39.storrent.logger.Logging
-import scala.concurrent.Promise
-import akka.util.ByteString
+import scala.concurrent.{ExecutionContext, Promise}
+import akka.util.{ByteStringBuilder, ByteString}
+import java.io.{BufferedInputStream, ByteArrayOutputStream, ByteArrayInputStream, InputStream}
+import scala.io.Source
 
 trait HttpClient {
 
@@ -16,28 +18,17 @@ trait HttpClient {
 
 }
 
-object RealHttpClientComponent extends HttpClient with Logging {
-  import com.ning.http.client._
+class RawHttpClientComponent(implicit executionContext: ExecutionContext) extends HttpClient with Logging {
+  import scala.concurrent._
+  import java.net.URL
 
-  val asyncClient = new AsyncHttpClient()
-
-  def getBytesFrom(url: String) = {
-    val result = Promise[ByteString]()
-    asyncClient.prepareGet(url).execute(new AsyncCompletionHandlerBase {
-      override def onCompleted(response: Response) = {
-        val code = response.getStatusCode
-        if (code != 200) {
-          logger.error("bad status code {} for {}", code, url)
-          result.failure(BadResponse(code, response.getStatusText))
-        } else {
-          result.success(ByteString(response.getResponseBodyAsByteBuffer))
-        }
-        super.onCompleted(response)
-      }
-    })
-    result.future
+  def getBytesFrom(url: String): Future[ByteString] = Future {
+    val stream: InputStream = new URL(url).openStream()
+    val bytes = try {
+      Stream.continually(stream.read).takeWhile(-1 !=).map(_.toByte).toArray
+    } finally {
+      stream.close()
+    }
+    ByteString(bytes)
   }
-
-  override def shutdown() = asyncClient.closeAsynchronously()
-
 }
