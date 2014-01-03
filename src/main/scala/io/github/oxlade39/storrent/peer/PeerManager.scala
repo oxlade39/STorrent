@@ -3,6 +3,7 @@ package io.github.oxlade39.storrent.peer
 import akka.actor._
 import akka.event.LoggingReceive
 import akka.actor.Terminated
+import io.github.oxlade39.storrent.core.Torrent
 
 object PeerManager {
   import concurrent.duration._
@@ -10,13 +11,13 @@ object PeerManager {
   val MaxConnections = 50
   val checkStatusDuration = 5.seconds
 
-  def props = Props(new PeerManager)
+  def props(torrent: Torrent) = Props(new PeerManager(torrent))
 
 
   private[PeerManager] case object CheckStatus
 }
 
-class PeerManager extends Actor with ActorLogging {
+class PeerManager(torrent: Torrent) extends Actor with ActorLogging {
   import PeerManager._
   import context._
 
@@ -32,9 +33,11 @@ class PeerManager extends Actor with ActorLogging {
 
     case CheckStatus =>
       if (connectedPeers.size < MaxConnections) {
-        val toConnect: Peer = unconnectedPeers.head
-        val pc = watch(actorOf(PeerConnection.props, s"peer-connection-${toConnect.id}"))
-        connectedPeers += (pc -> toConnect)
+        val toConnectOption: Option[Peer] = unconnectedPeers.headOption
+        toConnectOption.foreach{ toConnect =>
+          val pc = watch(actorOf(PeerConnection.props(toConnect, torrent), s"peer-connection-${toConnect.id.id}"))
+          connectedPeers += (pc -> toConnect)
+        }
       }
 
     case Terminated(peerConnection) =>
@@ -43,7 +46,5 @@ class PeerManager extends Actor with ActorLogging {
         allPeers -= p
         connectedPeers -= peerConnection
       }
-
-    case _ => ???
   }
 }

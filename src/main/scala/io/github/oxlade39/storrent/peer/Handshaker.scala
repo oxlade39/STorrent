@@ -1,24 +1,27 @@
 package io.github.oxlade39.storrent.peer
 
-import akka.actor.{ReceiveTimeout, Props, Actor, ActorLogging}
+import akka.actor._
 import akka.util.{ByteStringBuilder, ByteString}
 import akka.event.LoggingReceive
+import scala.Some
+import akka.io.Tcp
 
 object Handshaker {
   trait HandshakeMessage
   case object HandshakeSuccess extends HandshakeMessage
   case object HandshakeFailed extends HandshakeMessage
 
-  def props() = Props(new Handshaker)
+  def props(connection: ActorRef, handshake: Handshake) = Props(new Handshaker(connection, handshake))
 }
 
-class Handshaker extends Actor with ActorLogging {
+class Handshaker(connection: ActorRef, handshake: Handshake) extends Actor with ActorLogging {
   import Handshaker._
   import Handshake._
   import akka.io.Tcp._
   import context._
   import concurrent.duration._
 
+  connection ! Tcp.Write(handshake.encoded)
   setReceiveTimeout(15.seconds)
 
   def receive = LoggingReceive(buffering(ByteString.newBuilder))

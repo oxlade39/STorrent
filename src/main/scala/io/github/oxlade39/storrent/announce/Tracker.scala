@@ -42,23 +42,20 @@ class Tracker(torrent: Torrent) extends Actor with ActorLogging {
 
   def receive = awaitingResponse(watch(actorOf(clientFor(current), "tracker-client")), current)
 
-  def awaitingResponse(client: ActorRef, uri: URI): Receive = {
-    client ! request
-    LoggingReceive {
-      case r: NormalTrackerResponse =>
-        unwatch(client)
-        parent ! Discovered(r.peers)
+  def awaitingResponse(client: ActorRef, uri: URI): Receive = LoggingReceive {
+    case r: NormalTrackerResponse =>
+      unwatch(client)
+      parent ! Discovered(r.peers)
 
-      case f: FailureTrackerResponse =>
-        unwatch(client)
-        log.info("tracker on {} failed with {}", uri, f)
-        become(awaitingResponse(watch(actorOf(clientFor(nextTracker))), current))
+    case f: FailureTrackerResponse =>
+      unwatch(client)
+      log.info("tracker on {} failed with {}", uri, f)
+      become(awaitingResponse(watch(actorOf(clientFor(nextTracker))), current))
 
-      case Terminated(trackerClient) if trackerClient == client =>
-        unwatch(client)
-        log.warning("tracker {} at {} died", client, uri)
-        become(awaitingResponse(watch(actorOf(clientFor(nextTracker))), current))
-    }
+    case Terminated(trackerClient) if trackerClient == client =>
+      unwatch(client)
+      log.warning("tracker {} at {} died", client, uri)
+      become(awaitingResponse(watch(actorOf(clientFor(nextTracker))), current))
   }
 
   def nextTracker: URI = {
