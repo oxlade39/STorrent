@@ -19,7 +19,7 @@ class StorrentDownloadIntegrationTest extends TestKit(ActorSystem("StorrentDownl
   }
 
   "StorrentDownloadIntegrationTest" must {
-    "start tracking" in {
+    "start tracking" ignore {
 
       val fakePeer = system.actorOf(fakeTcpClient(self))
 

@@ -20,7 +20,7 @@ class HttpTrackerClientIntegrationTest extends TestKit(ActorSystem("HttpTrackerC
   }
 
   "HttpTrackerClient" must {
-    "connect to a real tracker" in {
+    "connect to a real tracker" ignore {
       val t = Torrent.fromFile("examples" / "ubuntu.torrent")
       val announceUrl = t.announceList.head.head.toURL
       val request = TrackerRequest(
