@@ -104,3 +104,71 @@ class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMe
     }
   }
 }
+
+class MessageStage extends SymmetricPipelineStage[PipelineContext, Message, PartialMessage] {
+  import Pipeline._
+
+  override def apply(ctx: PipelineContext) =
+    new SymmetricPipePair[Message, PartialMessage] {
+
+      def commandPipeline: Message => Iterable[Result] =
+      { m: Message =>
+        ctx.singleCommand(PartialMessage(m.length, m.messageId, m.payload.getOrElse(ByteString.empty)))
+      }
+
+      def eventPipeline: PartialMessage => Iterable[Result] =
+      { pm: PartialMessage =>
+        if (pm.messageId.isEmpty)
+          ctx.singleEvent(KeepAlive)
+        else {
+          val msgId = pm.messageId.get
+          val body = pm.body
+          val key: (Int, ByteString) = (msgId, body)
+          val singleEvent = parseMessage.andThen(msg => ctx.singleEvent(msg))
+          singleEvent.applyOrElse[(Int, ByteString), Iterable[Result]](key, _ => Iterable.empty[Result])
+        }
+      }
+
+      def parseMessage: PartialFunction[(Int, ByteString), Message] = {
+        case (0, _) => Choke
+        case (1, _) => UnChoke
+        case (2, _) => Interested
+        case (3, _) => NotInterested
+
+        case (4, body) => Have(body.iterator.getLongPart(4).toInt)
+
+        case (5, body) =>
+          val xs: Array[Byte] = new Array[Byte](body.length)
+          body.iterator.getBytes(xs)
+          val withoutSignExtention: Array[Int] = xs.map(_.toInt & 0xff)
+          val setBits: Seq[Boolean] = BitOps.asBooleans(withoutSignExtention)
+          Bitfield(setBits)
+
+        case (6, body) =>
+          val itr = body.iterator
+          Request(
+            index = itr.getLongPart(4).toInt,
+            begin = itr.getLongPart(4).toInt,
+            requestLength = itr.getLongPart(4).toInt
+          )
+
+        case (7, body) =>
+          val itr = body.iterator
+          Piece(
+            itr.getLongPart(4).toInt,
+            itr.getLongPart(4).toInt,
+            itr.toByteString
+          )
+
+        case (8, body) =>
+          val itr = body.iterator
+          Cancel(
+            index = itr.getLongPart(4).toInt,
+            begin = itr.getLongPart(4).toInt,
+            requestLength = itr.getLongPart(4).toInt
+          )
+
+        case (9, body) => Port(body.iterator.getLongPart(2).toShort)
+      }
+    }
+}

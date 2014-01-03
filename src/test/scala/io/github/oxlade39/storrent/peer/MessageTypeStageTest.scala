@@ -57,7 +57,6 @@ class MessageTypeStageTest extends WordSpec with MustMatchers with RandomOps {
 object MessageTypeStageTest {
   val exampleMessages = Seq(
     KeepAlive,
-    Bitfield(Seq(true, false, true, true, false)),
     Cancel(9, 7, 1005),
     Choke,
     Have(457),
@@ -66,6 +65,7 @@ object MessageTypeStageTest {
     Piece(7, 13, ByteString("hello world")),
     Port(8080),
     Request(24, 1, 57),
-    UnChoke
+    UnChoke,
+    Bitfield(Seq(true, false, true, true, false, false, true, false))
   )
 }
