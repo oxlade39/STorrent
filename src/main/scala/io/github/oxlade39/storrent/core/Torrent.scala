@@ -14,6 +14,8 @@ object Torrent {
   val mediaType = "application/x-bittorrent"
   val encoding = "ISO-8859-1"
 
+  def apply(file: File) = fromFile(file)
+
   def fromFile(file: File): Torrent = {
     val tfr = new TorrentFileReader(file)
 

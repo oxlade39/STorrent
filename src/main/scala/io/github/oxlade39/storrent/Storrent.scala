@@ -6,6 +6,7 @@ import io.github.oxlade39.storrent.core.Torrent
 import java.net.{InetAddress, InetSocketAddress}
 import akka.event.LoggingReceive
 import io.github.oxlade39.storrent.peer.PeerManager
+import io.github.oxlade39.storrent.piece.PieceManager
 
 object Storrent {
   case class DownloadTorrent(file: File)
@@ -40,7 +41,8 @@ object StorrentDownload {
 
 trait DownloadProps {
   def trackerProps(torrent: Torrent) = announce.Tracker.props(torrent)
-  def peerManagerProps(torrent: Torrent) = PeerManager.props(torrent)
+  def peerManagerProps(torrent: Torrent, pieceManager: ActorRef) = PeerManager.props(torrent, pieceManager)
+  def pieceManagerProps(torrent: Torrent) = PieceManager.props(torrent)
 }
 
 class StorrentDownload(file: File) extends Actor with ActorLogging with DownloadProps {
@@ -49,7 +51,8 @@ class StorrentDownload(file: File) extends Actor with ActorLogging with Download
 
   val torrent = Torrent.fromFile(file)
   val tracker = watch(actorOf(trackerProps(torrent), s"tracker-${torrent.name}"))
-  val peers = actorOf(peerManagerProps(torrent), "peer-manager")
+  val pieceManager = actorOf(pieceManagerProps(torrent), "piece-manager")
+  val peers = actorOf(peerManagerProps(torrent, pieceManager), "peer-manager")
 
   def receive = LoggingReceive {
     case d @ Discovered(newPeers) =>

@@ -106,6 +106,13 @@ case class Bitfield(bitfield: Seq[Boolean]) extends Message {
   }
 }
 
+object Bitfield {
+  def padded(bitfield: Seq[Boolean]): Bitfield = {
+    val overflow = 8 - (bitfield.size % 8)
+    apply(bitfield ++ Seq.fill(overflow)(false))
+  }
+}
+
 object BitOps {
   def asBooleans(withoutSignExt: Seq[Int]):Seq[Boolean] = {
     withoutSignExt.flatMap{ i ⇒

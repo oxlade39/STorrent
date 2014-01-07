@@ -11,13 +11,13 @@ object PeerManager {
   val MaxConnections = 50
   val checkStatusDuration = 5.seconds
 
-  def props(torrent: Torrent) = Props(new PeerManager(torrent))
+  def props(torrent: Torrent, pieceManager: ActorRef) = Props(new PeerManager(torrent, pieceManager))
 
 
   private[PeerManager] case object CheckStatus
 }
 
-class PeerManager(torrent: Torrent) extends Actor with ActorLogging {
+class PeerManager(torrent: Torrent, pieceManager: ActorRef) extends Actor with ActorLogging {
   import PeerManager._
   import context._
 
@@ -35,7 +35,7 @@ class PeerManager(torrent: Torrent) extends Actor with ActorLogging {
       if (connectedPeers.size < MaxConnections) {
         val toConnectOption: Option[Peer] = unconnectedPeers.headOption
         toConnectOption.foreach{ toConnect =>
-          val pc = watch(actorOf(PeerConnection.props(toConnect, torrent), s"peer-connection-${toConnect.id.id}"))
+          val pc = watch(actorOf(PeerConnection.props(toConnect, torrent, pieceManager), s"peer-connection-${toConnect.id.id}"))
           connectedPeers += (pc -> toConnect)
         }
       }
