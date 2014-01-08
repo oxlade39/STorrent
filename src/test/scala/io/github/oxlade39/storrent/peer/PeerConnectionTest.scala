@@ -55,7 +55,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
       val hs = fakePeer.receivesHandshake()
       val myPeerId: PeerId = PeerId()
       fakePeer.sendsHandshake(hs.copy(peerId = myPeerId))
-      val allPieces = Bitfield.padded(torrent.pieceHashes.map(_ => true))
+      val allPieces = Bitfield(torrent.pieceHashes.map(_ => true))
       fakePeer.sends(allPieces) // the fakePeer has all the pieces
 
       fakePieceManager.expectMsg(PeerHasPieces(peer.id, allPieces))

@@ -1,6 +1,7 @@
 package io.github.oxlade39.storrent.test.util
 
 import java.io.File
+import io.github.oxlade39.storrent.core.Torrent
 
 trait FileOps {
 
@@ -12,4 +13,8 @@ trait FileOps {
 
   def file(location: String) =
     new File(Thread.currentThread().getContextClassLoader.getResource(location).toURI)
+}
+
+object Files extends FileOps {
+  val ubuntuTorrent: Torrent = Torrent("examples" / "ubuntu.torrent")
 }

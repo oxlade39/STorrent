@@ -122,6 +122,8 @@ case class Torrent(name: String,
   lazy val hexInfoHash = infoHash.map("%02X" format _).mkString
 
   lazy val trackerCount = announceList.flatten.toSet.size
+
+  def pieceCount = pieceHashes.size
 }
 
 case class TorrentFile(name: String, size: Long)

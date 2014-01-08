@@ -2,6 +2,7 @@ package io.github.oxlade39.storrent.peer
 
 import akka.util.ByteString
 import java.nio.ByteBuffer
+import io.github.oxlade39.storrent.core.Torrent
 
 object Message {
 
@@ -81,6 +82,7 @@ case class Have(pieceIndex: Int) extends Message {
  * bitfields that are not of the correct size, or if the bitfield has any of the spare bits set.</p>
  */
 case class Bitfield(bitfield: Seq[Boolean]) extends Message {
+
   val messageId = Some(5)
   lazy val length = 1 + Math.ceil(bitfield.size.toDouble / 8).toInt
 
@@ -100,6 +102,16 @@ case class Bitfield(bitfield: Seq[Boolean]) extends Message {
 
   def set(index: Int) = copy(bitfield.updated(index, true))
 
+  def padded: Bitfield = {
+    val overflow = 8 - (bitfield.size % 8)
+    copy(bitfield ++ Seq.fill(overflow)(false))
+  }
+
+  def trimmed(torrent: Torrent): Bitfield = {
+    assert(bitfield.size >= torrent.pieceCount, s"Bitfield was smaller (${bitfield.size}}) than required pieces (${torrent.pieceCount})")
+    copy(bitfield.view(0, torrent.pieceCount))
+  }
+
   override def toString = {
     val size = bitfield.size
     s"Bitfield($size pieces)"
@@ -107,9 +119,8 @@ case class Bitfield(bitfield: Seq[Boolean]) extends Message {
 }
 
 object Bitfield {
-  def padded(bitfield: Seq[Boolean]): Bitfield = {
-    val overflow = 8 - (bitfield.size % 8)
-    apply(bitfield ++ Seq.fill(overflow)(false))
+  def padded(bitfield: Boolean*): Bitfield = {
+    Bitfield(bitfield).padded
   }
 }
 

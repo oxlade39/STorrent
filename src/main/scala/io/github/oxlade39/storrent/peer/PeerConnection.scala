@@ -12,7 +12,8 @@ import akka.util.ByteString
  * @author dan
  */
 object PeerConnection {
-  def props(peer: Peer, torrent: Torrent, pieceManager: ActorRef) = Props(new PeerConnection(peer, torrent, pieceManager))
+  def props(peer: Peer, torrent: Torrent, pieceManager: ActorRef) =
+    Props(new PeerConnection(peer, torrent, pieceManager))
 
   case class EstablishedConnection(actorRef: ActorRef,
                                    localAddress: InetSocketAddress,
@@ -85,7 +86,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
       peerProtocol forward Received(message)
 
     case status: PeerProtocol.PeerStatus =>
-      status.pieces map (p => PieceManager.PeerHasPieces(peer.id, p)) foreach (pieceManager ! _)
+      status.pieces map (p => PieceManager.PeerHasPieces(peer.id, p.trimmed(torrent))) foreach (pieceManager ! _)
 
     case other =>
       log.warning("stopping as received {}", other)
