@@ -88,6 +88,9 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
     case status: PeerProtocol.PeerStatus =>
       status.pieces map (p => PieceManager.PeerHasPieces(peer.id, p.trimmed(torrent))) foreach (pieceManager ! _)
 
+    case PeerProtocol.GetPeerStatus =>
+      peerProtocol forward PeerProtocol.GetPeerStatus
+
     case other =>
       log.warning("stopping as received {}", other)
       stop(self)

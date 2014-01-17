@@ -4,11 +4,12 @@ import akka.actor._
 import akka.io.{PipelineFactory, PipelineContext}
 import akka.event.LoggingReceive
 import akka.util.ByteString
-import io.github.oxlade39.storrent.piece.PieceManager
 
 object PeerProtocol {
 
   def props = Props(new PeerProtocol)
+
+  case object GetPeerStatus
 
   case class PeerStatus(choked: Boolean = true, interested: Boolean = false, pieces: Option[Bitfield] = None) {
     def unchoke = copy(choked = false)
@@ -39,11 +40,19 @@ class PeerProtocol extends Actor with ActorLogging {
       remotePeer = remotePeer.copy(pieces = Some(bf))
       context.parent ! remotePeer
 
+    case Received(Have(pieceIndex)) if remotePeer.pieces.isDefined =>
+      val updatedBitFieldOption = remotePeer.pieces.map(current => current.set(pieceIndex))
+      remotePeer = remotePeer.copy(pieces = updatedBitFieldOption)
+      context.parent ! remotePeer
+
     case Send(NotInterested) =>
       remotePeer.notInterested
 
     case Send(Interested) =>
       remotePeer.interested_!
+
+    case GetPeerStatus =>
+      sender ! (localPeer, remotePeer)
   }
 }
 

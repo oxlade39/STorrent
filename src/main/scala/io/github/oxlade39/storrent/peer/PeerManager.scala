@@ -11,21 +11,42 @@ object PeerManager {
   val MaxConnections = 50
   val checkStatusDuration = 5.seconds
 
-  def props(torrent: Torrent, pieceManager: ActorRef) = Props(new PeerManager(torrent, pieceManager))
-
+  def props(torrent: Torrent, pieceManager: ActorRef) =
+    Props(new PeerManager(torrent, pieceManager, Downloader.props(torrent, pieceManager)))
 
   private[PeerManager] case object CheckStatus
+  case object GetConnectedPeers
+
+  /**
+   * @param connected mapping of PeerConnection ActorRef to Peer
+   */
+  case class ConnectedPeers(connected: Map[ActorRef, Peer])
 }
 
-class PeerManager(torrent: Torrent, pieceManager: ActorRef) extends Actor with ActorLogging {
+class PeerManager(torrent: Torrent,
+                  pieceManager: ActorRef,
+                  downloaderProps: Props)
+  extends Actor with ActorLogging {
+
   import PeerManager._
   import context._
+  import SupervisorStrategy._
 
   var allPeers = Set.empty[Peer]
   var connectedPeers = Map.empty[ActorRef, Peer]
   def unconnectedPeers = allPeers.filterNot(p => connectedPeers.exists(kv => kv._2 == p))
 
+  val downloader = context.actorOf(downloaderProps, "downloader")
+
   system.scheduler.schedule(checkStatusDuration, checkStatusDuration, self, CheckStatus)
+
+  override val supervisorStrategy: SupervisorStrategy = {
+    def stoppingDecider: Decider = {
+      case _: Exception if sender == downloader ⇒ Restart
+      case _: Exception ⇒ Stop
+    }
+    OneForOneStrategy()(stoppingDecider)
+  }
 
   def receive = LoggingReceive {
     case Discovered(peers) =>
@@ -39,6 +60,9 @@ class PeerManager(torrent: Torrent, pieceManager: ActorRef) extends Actor with A
           connectedPeers += (pc -> toConnect)
         }
       }
+
+    case GetConnectedPeers =>
+      sender ! ConnectedPeers(connectedPeers)
 
     case Terminated(peerConnection) =>
       val peer = connectedPeers.get(peerConnection)

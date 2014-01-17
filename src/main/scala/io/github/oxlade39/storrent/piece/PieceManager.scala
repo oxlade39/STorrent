@@ -4,7 +4,6 @@ import io.github.oxlade39.storrent.peer.{Bitfield, PeerId}
 import io.github.oxlade39.storrent.core.Torrent
 import akka.actor.{ActorRef, ActorLogging, Actor, Props}
 import akka.event.LoggingReceive
-import scala.collection.{GenTraversableOnce, GenTraversable}
 
 /**
  * @author dan
@@ -15,14 +14,21 @@ object PieceManager {
   case class PeerHasPieces(peer: PeerId, pieces: Bitfield)
   case object GetPeerPieceMappings
 
-  case class PeerPieceMappings(global: Pieces, mappings: Map[PeerId, Pieces] = Map.empty) {
-    private[this] def mappingsWithDefault = mappings.withDefaultValue(Pieces(global.size))
+  case class PeerPieceMappings(global: Pieces, pieceCounts: Map[Int, Set[PeerId]] = Map.empty) {
+    private[this] def countsWithDefault = pieceCounts.withDefaultValue(Set.empty[PeerId])
 
     def ++(peerId: PeerId, pieces: Pieces): PeerPieceMappings = {
       val updatedGlobal = global ++ pieces
-      val updateMappings = mappingsWithDefault.updated(peerId, mappingsWithDefault(peerId) ++ pieces)
-      copy(updatedGlobal, updateMappings)
+      val updatedPieceCounts = pieces.has.foldLeft(countsWithDefault) { (counts, piece) =>
+        counts.updated(piece, counts(piece) + peerId)
+      }
+      copy(updatedGlobal, updatedPieceCounts)
     }
+
+    /**
+     * @return (pieceIndex, peerIds) sorted in order of rarest pieces first
+     */
+    def rarest: Seq[(Int, Set[PeerId])] = pieceCounts.toSeq.filterNot(_._2.isEmpty).sortBy(_._2.size)
   }
 
   case class Pieces(size: Int, has: Set[Int] = Set.empty) {
@@ -59,6 +65,6 @@ class PieceManager(torrent: Torrent) extends Actor with ActorLogging {
         (isSet, piece) <- pieces.bitfield.zipWithIndex
         if isSet
       } yield piece
-      peerPieceMappings = peerPieceMappings ++ (peer, Pieces(size = pieces.bitfield.size, setPieces.toSet))
+      peerPieceMappings ++= (peer, Pieces(size = pieces.bitfield.size, setPieces.toSet))
   }
 }
