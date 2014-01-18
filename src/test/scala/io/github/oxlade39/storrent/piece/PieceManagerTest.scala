@@ -1,10 +1,10 @@
 package io.github.oxlade39.storrent.piece
 
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.ActorSystem
 import org.scalatest.matchers.MustMatchers
-import io.github.oxlade39.storrent.peer.{Bitfield, PeerId}
+import io.github.oxlade39.storrent.peer._
 
 /**
  * @author dan
@@ -25,15 +25,24 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers {
       mappings.global mustEqual Pieces(ubuntuTorrent.pieceCount)
     }
 
-    "keeps track of which peers have which pieces" in {
+    "keeps track of which peers have which pieces, telling peer we are intered if it's a piece we do not have" in {
       val peerOne, peerTwo = PeerId()
+      val peerOneConnection, peerTwoConnection, downloader = TestProbe()
       val pieceManager = system.actorOf(PieceManager.props(ubuntuTorrent))
 
-      pieceManager ! PeerHasPieces(peerOne, Bitfield(ubuntuTorrent.pieceHashes.map(_ => false)).set(2))
-      pieceManager ! PeerHasPieces(peerTwo, Bitfield(ubuntuTorrent.pieceHashes.map(_ => false)).set(23).set(2))
-      pieceManager ! GetPeerPieceMappings
+      peerOneConnection.send(pieceManager,
+        PeerHasPieces(peerOne, Bitfield(ubuntuTorrent.pieceHashes.map(_ => false)).set(2)))
 
-      val mappings = expectMsgType[PeerPieceMappings]
+      peerTwoConnection.send(pieceManager,
+        PeerHasPieces(peerTwo, Bitfield(ubuntuTorrent.pieceHashes.map(_ => false)).set(23).set(2)))
+
+      downloader.send(pieceManager, GetPeerPieceMappings)
+
+      peerOneConnection.expectMsg(PeerConnection.Send(Interested))
+      peerTwoConnection.expectMsg(PeerConnection.Send(Interested))
+      peerTwoConnection.expectNoMsg()
+
+      val mappings = downloader.expectMsgType[PeerPieceMappings]
 
       mappings.pieceCounts mustEqual Map(
         2 -> Set(peerOne, peerTwo),

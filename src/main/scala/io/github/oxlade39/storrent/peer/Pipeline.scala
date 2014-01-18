@@ -4,6 +4,7 @@ import akka.io.{SymmetricPipePair, PipelineContext, SymmetricPipelineStage}
 import akka.util.ByteString
 import java.nio.ByteOrder
 import scala.annotation.tailrec
+import org.slf4j.LoggerFactory
 
 /**
  * @author dan
@@ -20,14 +21,16 @@ object Pipeline {
   val lengthBytes = 4
   val idBytes = 1
   val headerSize = lengthBytes + idBytes
-  // TODO ???
-  val maxSize = Long.MaxValue
+
+  val maxSize = 50000 // TODO ???
 }
 
 case class PartialMessage(length: Int, messageId: Option[Int], body: ByteString)
 
 class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMessage, ByteString] {
   import Pipeline._
+
+  lazy val log = LoggerFactory.getLogger(getClass)
 
   override def apply(ctx: PipelineContext) =
     new SymmetricPipePair[PartialMessage, ByteString] {
@@ -81,6 +84,7 @@ class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMe
             messageId = None,
             body = ByteString.empty) :: acc)
       } else {
+        log.trace("buffering, now {} bytes", bs.length)
         (Some(bs.compact), acc)
       }
     } else {
@@ -99,6 +103,7 @@ class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMe
                          messageId = Some(itr.getLongPart(idBytes).toInt),
                          body = body) :: acc)
       } else {
+        log.trace("buffering, {} < {}", bs.length, total)
         (Some(bs.compact), acc)
       }
     }
@@ -169,6 +174,8 @@ class MessageStage extends SymmetricPipelineStage[PipelineContext, Message, Part
           )
 
         case (9, body) => Port(body.iterator.getLongPart(2).toShort)
+
+        case (20, body) => Extended(body)
       }
     }
 }

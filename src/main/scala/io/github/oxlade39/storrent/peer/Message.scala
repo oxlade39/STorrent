@@ -185,3 +185,9 @@ case class Port(port: Short) extends Message {
   val messageId = Some(9)
   lazy val payload = Some(ByteString(ByteBuffer.allocate(2).putShort(port).array()))
 }
+
+case class Extended(body: ByteString) extends Message {
+  val length = 1 + body.size
+  val messageId = Some(20)
+  lazy val payload = Some(body)
+}

@@ -7,6 +7,8 @@ import akka.event.LoggingReceive
 import java.net.InetSocketAddress
 import io.github.oxlade39.storrent.core.Torrent
 import akka.util.ByteString
+import io.github.oxlade39.storrent.util.BytesSpy
+import java.io.File
 
 /**
  * @author dan
@@ -32,6 +34,8 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   import io.github.oxlade39.storrent.Storrent._
   import io.github.oxlade39.storrent.piece.PieceManager
 
+  val bytesSpy = actorOf(BytesSpy.props(new File("spy")), "bytespy")
+
   IO(Tcp) ! Tcp.Connect(peer.address, timeout = Some(connectionTimeout))
 
   def receive = unconnected
@@ -51,18 +55,24 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   }
   
   def handshaking(handshaker: ActorRef, connection: EstablishedConnection): Receive = LoggingReceive {
-    case data: Tcp.Received => 
+    case data: Tcp.Received =>
       handshaker forward data
+      bytesSpy forward data.data
       
-    case HandshakeSuccess =>
+    case HandshakeSuccess(overflow) =>
       log.info("now connected with handshake")
       unwatch(handshaker)
+      val processor = peerProtocolProcessor(connection)
+      processor ! overflow
       become(connected(
-        protocolProcessor = peerProtocolProcessor(connection),
+        protocolProcessor = processor,
         peerProtocol = peerProtocol(),
         connection = connection)
       )
-      
+
+    case Tcp.PeerClosed =>
+      stop(self)
+
     case HandshakeFailed => 
       stop(self)
   }
@@ -77,6 +87,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   
     case Tcp.Received(data) =>
       protocolProcessor forward data
+      bytesSpy forward data
 
     case Send(message) =>
       protocolProcessor forward message

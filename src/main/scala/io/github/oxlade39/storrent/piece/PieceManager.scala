@@ -1,9 +1,10 @@
 package io.github.oxlade39.storrent.piece
 
-import io.github.oxlade39.storrent.peer.{Bitfield, PeerId}
+import io.github.oxlade39.storrent.peer._
 import io.github.oxlade39.storrent.core.Torrent
-import akka.actor.{ActorRef, ActorLogging, Actor, Props}
+import akka.actor._
 import akka.event.LoggingReceive
+import io.github.oxlade39.storrent.peer.Have
 
 /**
  * @author dan
@@ -32,6 +33,11 @@ object PieceManager {
   }
 
   case class Pieces(size: Int, has: Set[Int] = Set.empty) {
+    def +(pieceIndex: Int) = {
+      assert(pieceIndex <= size, s"pieceIndex must be < $size")
+      copy(has = has + pieceIndex)
+    }
+
     def ++(that: Pieces) = {
       assert(that.size == this.size, s"sizes must match: ${that.size} != ${this.size}")
       copy(has = has ++ that.has)
@@ -53,18 +59,35 @@ class PieceManager(torrent: Torrent) extends Actor with ActorLogging {
     global = Pieces(torrent.pieceCount)
   )
 
+  var myPieces = Pieces(torrent.pieceCount)
+
   var connections = Map.empty[PeerId, ActorRef]
 
   def receive = LoggingReceive {
     case GetPeerPieceMappings => sender ! peerPieceMappings
 
-    case PeerHasPieces(peer, pieces) =>
-      connections += (peer -> sender)
+    case PeerHasPieces(peer, pieces) => {
+      connections += (peer -> context.watch(sender))
 
       val setPieces = for {
         (isSet, piece) <- pieces.bitfield.zipWithIndex
         if isSet
       } yield piece
+
+      val piecesIDoNotHave = setPieces.filterNot(myPieces.has.contains)
+      if (!piecesIDoNotHave.isEmpty)
+        sender ! PeerConnection.Send(Interested)
+
       peerPieceMappings ++= (peer, Pieces(size = pieces.bitfield.size, setPieces.toSet))
+    }
+
+    case h: Have =>
+      myPieces = myPieces + h.pieceIndex
+      connections.values foreach (_ ! PeerConnection.Send(h))
+
+    case Terminated(connection) =>
+      connections = connections.filterNot {
+        case (_, c) => connection == c
+      }
   }
 }

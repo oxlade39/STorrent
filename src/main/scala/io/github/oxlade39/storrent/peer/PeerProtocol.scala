@@ -22,19 +22,32 @@ object PeerProtocol {
 class PeerProtocol extends Actor with ActorLogging {
   import PeerProtocol._
   import PeerConnection._
+  import concurrent.duration._
 
   var localPeer = PeerStatus()
   var remotePeer = PeerStatus()
 
+  var activeDownloader = Option.empty[ActorRef]
+
+  context.setReceiveTimeout(2.minutes - 1.second)
+
   def receive = LoggingReceive {
+    case ReceiveTimeout =>
+      context.parent ! Send(KeepAlive)
+
     case Received(UnChoke) =>
-      localPeer.unchoke
+      localPeer = localPeer.unchoke
+
+    case Received(Choke) =>
+      localPeer = localPeer.choke
+
+    case Received(KeepAlive) =>
 
     case Received(NotInterested) =>
-      localPeer.notInterested
+      remotePeer = remotePeer.notInterested
 
     case Received(Interested) =>
-      localPeer.interested_!
+      remotePeer = remotePeer.interested_!
 
     case Received(bf: Bitfield) =>
       remotePeer = remotePeer.copy(pieces = Some(bf))
@@ -46,10 +59,22 @@ class PeerProtocol extends Actor with ActorLogging {
       context.parent ! remotePeer
 
     case Send(NotInterested) =>
-      remotePeer.notInterested
+      localPeer = localPeer.notInterested
 
     case Send(Interested) =>
-      remotePeer.interested_!
+      localPeer = localPeer.interested_!
+
+    case Send(Request(index, _, _)) =>
+      if (activeDownloader.isDefined && activeDownloader.get != sender)
+        log.warning("overwriting existing downloader {}", activeDownloader.get)
+      activeDownloader = Some(context.watch(sender))
+
+    case Received(completedPiece: Piece) =>
+      if (activeDownloader.isEmpty) log.warning("received {} but no active downloader", completedPiece.pieceIndex)
+      activeDownloader foreach (_ ! completedPiece)
+
+    case Terminated(finishedDownloader) =>
+      activeDownloader = None
 
     case GetPeerStatus =>
       sender ! (localPeer, remotePeer)

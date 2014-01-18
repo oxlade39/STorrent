@@ -46,3 +46,19 @@ object StorrentDownloadIntegrationTest {
   }
 
 }
+
+object Example extends App with FileOps {
+  import concurrent.duration._
+
+  val sys = ActorSystem("Example")
+  import sys._
+
+  val download = sys.actorOf(StorrentDownload.props("examples" / "ubuntu.torrent"), "ubuntuDL")
+
+  sys.scheduler.scheduleOnce(10 minutes, new Runnable {
+    def run() {
+      sys.stop(download)
+      sys.shutdown()
+    }
+  })
+}

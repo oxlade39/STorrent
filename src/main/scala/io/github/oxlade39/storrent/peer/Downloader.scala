@@ -53,7 +53,8 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
       log.info("completed download of piece {}", dp)
       unwatch(sender)
       removePieceDownloader(sender)
-      // TODO persist
+      // TODO persist piece
+      pieceManager ! Have(dp.index)
 
     case Terminated(child) =>
       log.warning("{} terminated before completing download", child)
@@ -70,7 +71,9 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
     } yield {
       log.debug("asking {} for status", peer)
       (peer ? GetPeerStatus).mapTo[(PeerStatus, PeerStatus)].map {
-        case (local, remote) => FindPieceToDownload(peer, local, remote)
+        case (local, remote) =>
+          log.info("response from GetPeerStatus {}", (local, remote))
+          FindPieceToDownload(peer, local, remote)
       }
     }
 

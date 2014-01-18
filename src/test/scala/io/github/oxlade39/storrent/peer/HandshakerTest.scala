@@ -28,7 +28,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar w
       peerConnection.expectMsg(Tcp.Write(fakeHandshake.encoded))
       peerConnection.send(handshaker, Tcp.Received(fakeHandshake.encoded))
 
-      peerConnection.expectMsg(Handshaker.HandshakeSuccess)
+      peerConnection.expectMsg(Handshaker.HandshakeSuccess())
       expectTerminated(handshaker)
     }
 
@@ -59,6 +59,10 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar w
       peerConnection.expectMsg(Tcp.Write(fakeHandshake.encoded))
       peerConnection.expectMsg(16.seconds, Handshaker.HandshakeFailed)
       expectTerminated(handshaker)
+    }
+
+    "correct length" in {
+      Handshake.handshakeSize mustEqual (49 + "BitTorrent protocol".size)
     }
   }
 
