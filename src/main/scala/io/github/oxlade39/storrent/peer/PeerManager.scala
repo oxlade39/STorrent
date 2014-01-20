@@ -8,7 +8,7 @@ import io.github.oxlade39.storrent.core.Torrent
 object PeerManager {
   import concurrent.duration._
 
-  val MaxConnections = 50
+  val MaxConnections = 1
   val checkStatusDuration = 5.seconds
 
   def props(torrent: Torrent, pieceManager: ActorRef) =
