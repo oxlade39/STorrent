@@ -42,7 +42,7 @@ object StorrentDownload {
 trait DownloadProps {
   def trackerProps(torrent: Torrent) = announce.Tracker.props(torrent)
   def peerManagerProps(torrent: Torrent, pieceManager: ActorRef) = PeerManager.props(torrent, pieceManager)
-  def pieceManagerProps(torrent: Torrent) = PieceManager.props(torrent)
+  def pieceManagerProps(torrent: Torrent) = PieceManager.props(torrent)()
 }
 
 class StorrentDownload(file: File) extends Actor with ActorLogging with DownloadProps {

@@ -102,7 +102,7 @@ class DownloaderTest extends TestKit(ActorSystem("DownloaderTest"))
       pieceManager.expectMsg(PieceManager.GetPeerPieceMappings)
 
       val pieces = PieceManager.Pieces(ubuntuTorrent.pieceCount)
-      val mappings = PieceManager.PeerPieceMappings(pieces) ++
+      val mappings = PieceManager.PeerPieceMappings(pieces, pieces) ++
         (peerId, pieces.copy(has = Set(0, 1, 2)))
 
       pieceManager.reply(mappings)

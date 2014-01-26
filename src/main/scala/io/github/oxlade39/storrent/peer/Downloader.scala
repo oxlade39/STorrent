@@ -60,12 +60,11 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
       val downloader = watch(actorOf(PieceDownloader.props(peer, toDl), s"piece-$pieceIndex"))
       activeDownloads += (pieceIndex -> ActivePeerPieceDownload(pieceIndex, peer, downloader))
 
-    case PieceDownloader.Success(dp) =>
-      log.info("completed download of piece {}", dp)
+    case complete: PieceDownloader.Success =>
+      log.info("completed download of piece {}", complete.downloadPiece)
       unwatch(sender)
       removePieceDownloader(sender)
-      // TODO persist piece
-      pieceManager ! Have(dp.index)
+      pieceManager ! complete
 
     case Terminated(child) =>
       log.warning("{} terminated before completing download", child)

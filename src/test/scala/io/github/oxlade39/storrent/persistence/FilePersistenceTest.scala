@@ -13,7 +13,7 @@ import org.scalatest.mock.MockitoSugar
 import io.github.oxlade39.storrent.core.{TorrentFile, Torrent}
 import io.github.oxlade39.storrent.peer.{Block, DownloadPiece}
 import org.mockito.Mockito
-import concurrent.duration._
+import org.apache.commons.io.FileUtils
 
 class FilePersistenceTest extends TestKit(ActorSystem("FilePersistenceTest"))
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers with FileOps {
@@ -60,12 +60,13 @@ class FilePersistenceTest extends TestKit(ActorSystem("FilePersistenceTest"))
 class FolderPersistenceTest extends TestKit(ActorSystem("FolderPersistenceTest"))
 with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers with FileOps with MockitoSugar {
 
+  override def beforeAll(): Unit = {
+    val testOut = new File("target") / "testOut"
+    FileUtils.forceMkdir(testOut)
+  }
+
   override def afterAll(): Unit = {
     system.shutdown()
-//    val testOut = new File("target") / "testOut"
-//    testOut.listFiles() foreach { dir =>
-//      FileUtils.deleteDirectory(dir)
-//    }
   }
 
   "FolderPersistence" must {
@@ -91,7 +92,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
         underTest ! Persistence.Persist(p)
       }
 
-      val FolderPersistence.Done(dir) = expectMsgType[FolderPersistence.Done](5.minutes)
+      val FolderPersistence.Done(dir) = expectMsgType[FolderPersistence.Done]
       dir.listFiles().map(_.getName).toList mustEqual FolderPersistenceTest.files.map(_.name)
 
       dir.listFiles() foreach { written =>
