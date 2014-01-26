@@ -32,10 +32,10 @@ class DownloadPieceTest extends WordSpecLike with MustMatchers {
       val blockOne = Block(data = world, offset = ByteString("Hello").size)
 
       val piece =
-        DownloadPiece(0, expectedData.size, Torrent.hash(expectedData)) + blockZero + blockOne
+        DownloadPiece(0, expectedData.size, 0, Torrent.hash(expectedData)) + blockZero + blockOne
 
-      val stream: piece.contiguousStream.type = piece.contiguousStream
-      stream mustEqual Some(expectedData)
+      val stream = piece.contiguousStream
+      stream.get.utf8String mustEqual "Hello World"
     }
   }
 }

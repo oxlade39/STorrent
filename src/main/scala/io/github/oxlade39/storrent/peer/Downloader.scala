@@ -45,7 +45,18 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
       sendStartDownloadToSelf(peer)
 
     case StartDownload(peer, pieceIndex) =>
-      val toDl = DownloadPiece(pieceIndex, torrent.pieceSize, torrent.pieceHashes(pieceIndex))
+      val toDl =
+        if (pieceIndex < (torrent.pieceCount - 1))
+          DownloadPiece(index = pieceIndex,
+            size = torrent.pieceSize,
+            offset = torrent.pieceSize * pieceIndex,
+            hash = torrent.pieceHashes(pieceIndex))
+        else
+          DownloadPiece(index = pieceIndex,
+            size = (torrent.getSize - (torrent.pieceSize * pieceIndex)).toInt,
+            offset = torrent.pieceSize * pieceIndex,
+            hash = torrent.pieceHashes(pieceIndex))
+
       val downloader = watch(actorOf(PieceDownloader.props(peer, toDl), s"piece-$pieceIndex"))
       activeDownloads += (pieceIndex -> ActivePeerPieceDownload(pieceIndex, peer, downloader))
 

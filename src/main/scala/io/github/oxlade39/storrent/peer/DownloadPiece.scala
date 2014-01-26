@@ -18,11 +18,10 @@ case class Block(offset: Int, data: ByteString)
 case class DownloadPiece(
   index: Int,
   size: Int,
+  offset: Int,
   hash: ByteString,
   data: SortedSet[Block] = mutable.SortedSet()(Block.orderByOffset)
 ) {
-
-  def offset = index * size
 
   def totalBlockSize: Int = data.foldLeft(0)(_ + _.data.size)
   def hasEnoughBytesToBeComplete = totalBlockSize >= size
@@ -56,5 +55,7 @@ case class DownloadPiece(
   lazy val isValid: Boolean = actualHash.exists(_.equals(hash))
 
   def +(block: Block): DownloadPiece = copy(data = data + block)
-  def ++(blocks: Set[Block]) = copy(data = data ++ blocks)
+  def ++(blocks: Traversable[Block]) = copy(data = data ++ blocks)
+
+  override def toString = s"DownloadPiece($index, offset = $offset, size = $size)"
 }

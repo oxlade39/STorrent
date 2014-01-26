@@ -1,6 +1,6 @@
 package io.github.oxlade39.storrent.peer
 
-import org.scalatest.{BeforeAndAfterAll, WordSpecLike, FunSuite}
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
 import org.scalatest.matchers.MustMatchers
@@ -24,6 +24,7 @@ class PieceDownloaderTest extends TestKit(ActorSystem("PieceDownloaderTest"))
       val requestLength = 10
       val initialPiece = DownloadPiece(index = 5,
         size = 112,
+        offset = 5 * 112,
         hash = ByteString("hash"))
 
       val pd = system.actorOf(PieceDownloader.props(
@@ -45,6 +46,7 @@ class PieceDownloaderTest extends TestKit(ActorSystem("PieceDownloaderTest"))
       val requestLength = 10
       val initialPiece = DownloadPiece(index = 5,
         size = 112,
+        offset = 5 * 112,
         hash = ByteString("hash"))
 
       val pd = system.actorOf(PieceDownloader.props(
@@ -86,6 +88,7 @@ class PieceDownloaderTest extends TestKit(ActorSystem("PieceDownloaderTest"))
       val totalPieceSize: Int = pieceBytes.size
       val initialPiece = DownloadPiece(index = 5,
         size = totalPieceSize,
+        offset = 5 * totalPieceSize,
         hash = Torrent.hash(pieceBytes))
 
       val pd = watch(system.actorOf(Props(new ForwardingParent(PieceDownloader.props(
@@ -104,7 +107,7 @@ class PieceDownloaderTest extends TestKit(ActorSystem("PieceDownloaderTest"))
       val success = expectMsgType[PieceDownloader.Success]
       expectTerminated(pd)
 
-      success.downloadPiece.contiguousStream.get mustEqual pieceBytes
+      success.downloadPiece.contiguousStream mustEqual Some(pieceBytes)
     }
   }
 

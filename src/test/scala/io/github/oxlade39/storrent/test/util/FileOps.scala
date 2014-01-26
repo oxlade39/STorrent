@@ -11,6 +11,11 @@ trait FileOps {
     def /(child: String) = new File(file(s), child)
   }
 
+  implicit class FileOps(f: File) {
+
+    def /(child: String) = new File(f, child)
+  }
+
   def file(location: String) =
     new File(Thread.currentThread().getContextClassLoader.getResource(location).toURI)
 }
