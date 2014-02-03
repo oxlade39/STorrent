@@ -34,8 +34,6 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   import io.github.oxlade39.storrent.Storrent._
   import io.github.oxlade39.storrent.piece.PieceManager
 
-  val bytesSpy = actorOf(BytesSpy.props(new File("spy")), "bytespy")
-
   IO(Tcp) ! Tcp.Connect(peer.address, timeout = Some(connectionTimeout))
 
   def receive = unconnected
@@ -57,8 +55,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   def handshaking(handshaker: ActorRef, connection: EstablishedConnection): Receive = LoggingReceive {
     case data: Tcp.Received =>
       handshaker forward data
-      bytesSpy forward data.data
-      
+
     case HandshakeSuccess(overflow) =>
       log.info("now connected with handshake")
       unwatch(handshaker)
@@ -87,7 +84,6 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   
     case Tcp.Received(data) =>
       protocolProcessor forward data
-      bytesSpy forward data
 
     case Send(message) =>
       protocolProcessor forward message

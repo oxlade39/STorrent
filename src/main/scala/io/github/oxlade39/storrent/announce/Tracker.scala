@@ -24,7 +24,7 @@ class Tracker(torrent: Torrent) extends Actor with ActorLogging {
 
   var tier = 0
   var client = 0
-  def current = trackerTiers(tier)(client)
+  def current: URI = trackerTiers(tier)(client)
 
   def clientFor(uri: URI): Props = uri.getScheme match {
     case "http" => Props(new HttpTrackerClient(uri.toURL, request))
@@ -46,6 +46,11 @@ class Tracker(torrent: Torrent) extends Actor with ActorLogging {
     case r: NormalTrackerResponse =>
       unwatch(client)
       parent ! Discovered(r.peers)
+      context.system.scheduler.scheduleOnce(r.clientRequestInterval, new Runnable {
+        override def run() {
+          context.become(awaitingResponse(watch(actorOf(clientFor(current), "tracker-client")), current))
+        }
+      })
 
     case f: FailureTrackerResponse =>
       unwatch(client)

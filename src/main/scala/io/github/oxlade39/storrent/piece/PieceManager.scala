@@ -5,7 +5,7 @@ import io.github.oxlade39.storrent.core.Torrent
 import akka.actor._
 import akka.event.LoggingReceive
 import io.github.oxlade39.storrent.peer.Have
-import io.github.oxlade39.storrent.persistence.FolderPersistence
+import io.github.oxlade39.storrent.persistence.{Persistence, FolderPersistence}
 import java.io.File
 
 /**
@@ -98,6 +98,7 @@ class PieceManager(torrent: Torrent, persistenceProps: Props) extends Actor with
       val index = complete.downloadPiece.index
       peerPieceMappings = peerPieceMappings.completed(index)
       connections.values foreach (_ ! PeerConnection.Send(Have(index)))
+      persistence ! Persistence.Persist(complete.downloadPiece)
 
     case Terminated(connection) =>
       connections = connections.filterNot {

@@ -145,6 +145,7 @@ class PieceDownloader(peer: ActorRef,
   import PieceDownloader._
   import context._
 
+  watch(peer)
   startDownloading(initialPiece)
 
   def startDownloading(p: DownloadPiece) = {
@@ -168,7 +169,7 @@ class PieceDownloader(peer: ActorRef,
       log.debug("received offset {} of piece {}", begin, index)
       val updatedDownload = dl.received + Block(begin, block)
       if (updatedDownload.isValid) {
-        log.info("finished download piece {} telling {}", index, dl.requester)
+        log.info("finished download piece {} telling {}", index, parent)
         parent ! Success(updatedDownload)
         stop(self)
       } else {
@@ -190,6 +191,12 @@ class PieceDownloader(peer: ActorRef,
         }
 
       }
+    }
+
+    case Terminated(child) => {
+      // schedule termination as race condition with receiving pending pieces
+      log.info("child has terminated. Scheduling terminating in 30 seconds")
+      context.system.scheduler.scheduleOnce(30.seconds, self, PoisonPill)
     }
   }
 

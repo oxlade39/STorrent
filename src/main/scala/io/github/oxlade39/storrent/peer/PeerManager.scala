@@ -8,14 +8,15 @@ import io.github.oxlade39.storrent.core.Torrent
 object PeerManager {
   import concurrent.duration._
 
-  val MaxConnections = 1
-  val checkStatusDuration = 5.seconds
+  val MaxConnections = 30
+  val checkStatusDuration = 500.millis
 
   def props(torrent: Torrent, pieceManager: ActorRef) =
-    Props(new PeerManager(torrent, pieceManager, Downloader.props(torrent, pieceManager)))
+    Props(new PeerManager(torrent, pieceManager, Downloader2.props(torrent, pieceManager)))
 
   private[PeerManager] case object CheckStatus
   case object GetConnectedPeers
+  case class PeerConnected(peerConnection: ActorRef)
 
   /**
    * @param connected mapping of PeerConnection ActorRef to Peer
@@ -50,6 +51,7 @@ class PeerManager(torrent: Torrent,
 
   def receive = LoggingReceive {
     case Discovered(peers) =>
+      log.info("discovered {} peers", peers.size)
       allPeers ++= peers
 
     case CheckStatus =>

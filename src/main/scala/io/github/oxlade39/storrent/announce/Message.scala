@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import scala.Some
 import io.github.oxlade39.storrent.core.BMap
 import io.github.oxlade39.storrent.peer.Peer
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * @author dan
@@ -96,8 +97,8 @@ case class TrackerRequest(
 sealed trait TrackerResponse extends Message
 
 case class NormalTrackerResponse(
-                                  clientRequestInterval: Int,
-                                  minimumAnnounceInterval: Option[Int] = None,
+                                  clientRequestInterval: FiniteDuration,
+                                  minimumAnnounceInterval: Option[FiniteDuration] = None,
                                   trackerId: Option[String] = None,
                                   numberOfCompletedPeers: Int,
                                   numberOfUncompletedPeers: Int,
@@ -106,6 +107,7 @@ case class NormalTrackerResponse(
                                   ) extends TrackerResponse
 
 object NormalTrackerResponse {
+  import concurrent.duration._
   val logger = LoggerFactory.getLogger(NormalTrackerResponse.getClass)
 
   def parse(bytes: ByteString): Option[NormalTrackerResponse] = {
@@ -147,8 +149,8 @@ object NormalTrackerResponse {
           complete <- requiredInt("complete")
           incomplete <- requiredInt("incomplete")
           peers <- asBytes.map(bytesToPeers)
-        } yield NormalTrackerResponse(interval,
-          optionalInt("min interval"),
+        } yield NormalTrackerResponse(interval.seconds,
+          optionalInt("min interval").map(_.seconds),
           optionalString("tracker id"),
           complete,
           incomplete,

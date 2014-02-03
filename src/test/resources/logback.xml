@@ -24,15 +24,24 @@
         </encoder>
     </appender>
 
-    <logger name="io.github.oxlade39.storrent" level="DEBUG" additivity="false">
+    <logger name="io.github.oxlade39" level="INFO">
+        <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </logger>
 
-    <!--<logger name="io.github.oxlade39.storrent" level="WARN" additivity="false">-->
-        <!--<appender-ref ref="STDOUT"/>-->
+    <logger name="akka.io" level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <!--<logger name="io.github.oxlade39.storrent.peer.PieceDownloader" level="DEBUG">-->
+        <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 
-    <root level="WARN">
+    <!--<logger name="io.github.oxlade39.storrent.peer.DownloadWorker" level="DEBUG">-->
+        <!--<appender-ref ref="FILE"/>-->
+    <!--</logger>-->
+
+    <root level="info">
         <appender-ref ref="STDOUT"/>
     </root>
 

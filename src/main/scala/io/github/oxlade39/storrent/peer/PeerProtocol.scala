@@ -69,6 +69,9 @@ class PeerProtocol extends Actor with ActorLogging {
         log.warning("overwriting existing downloader {}", activeDownloader.get)
       activeDownloader = Some(context.watch(sender))
 
+    case Send(other) =>
+      log.debug("ignoring send of {} as has no state implication", other)
+
     case Received(completedPiece: Piece) =>
       if (activeDownloader.isEmpty) log.warning("received {} but no active downloader", completedPiece.pieceIndex)
       activeDownloader foreach (_ ! completedPiece)
