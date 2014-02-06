@@ -34,11 +34,13 @@ _io.github.oxlade39.storrent.example.Example_ demonstrates one example usage of 
 *STorrent* is not finished! For example serving pieces to connected peers is not implemented at all, in other words
  only downloads are currently supported.
 
+
 #### Code review
 This is my first attempt at developing anything significant in Akka, following on from the [Coursera](https://www.coursera.org/)
  Reactive Programming course. I'm keen to improve my Akka and Scala so _constructive_ criticism is welcomed.
 
-The remaining work will be tracked in the issues section.
+The remaining work will be tracked in the issues section, the focus on working toward a 1.0 release which will aim to be
+ a minimum feature working BitTorrent client.
 
 ### Implementation
 
@@ -49,14 +51,21 @@ Notable implementation areas:
 - *BencodeParser* implementation of [Bencode](https://wiki.theory.org/BitTorrentSpecification#Bencoding) parsing
 - *BValue* case classes representing the different [Bencoded](https://wiki.theory.org/BitTorrentSpecification#Bencoding) types
 
-### *io.github.oxlade39.storrent.example*
+#### *io.github.oxlade39.storrent.example*
 - *Example* An example of using *STorrent* to download Ubuntu
 
 There is currently no notification of final completion but this shouldn't be hard to add...
 
-### *io.github.oxlade39.storrent.peer*
+#### *io.github.oxlade39.storrent.peer*
 
-### *io.github.oxlade39.storrent.persistence*
+#### *io.github.oxlade39.storrent.persistence*
 Folder and single File persistence, using *java.nio*
 
-### *io.github.oxlade39.storrent.piece*
+#### *io.github.oxlade39.storrent.piece*
+- *Downloader2* Actor currently responsible for managing and co-ordinating child actors which request and download the
+ individual pieces and blocks. It currently uses a work pulling pattern to queue the available work (pieces from peers)
+ and allow workers to request the next download task (piece from peer) to work on.
+
+### Licence
+_TBC_
+
