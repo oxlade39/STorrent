@@ -36,6 +36,7 @@ _io.github.oxlade39.storrent.example.Example_ demonstrates one example usage of 
 *STorrent* is not finished! For example serving pieces to connected peers is not implemented at all, in other words
  only downloads are currently supported.
 
+I'm working on fixing that, you can help too.
 
 #### Code review
 This is my first attempt at developing anything significant in Akka, following on from the [Coursera](https://www.coursera.org/)
