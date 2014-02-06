@@ -17,6 +17,8 @@ Reactive Programming course.
  and [scalatest](http://www.scalatest.org/) to test the expected inputs/outputs, parent/child communication and actor
  termination, as well as regular specs for non actor classes.
 
+If you contribute please be sure to add plenty of tests.
+
 ### Examples
 Examples are placed in the _io.github.oxlade39.storrent.example_ package
 
