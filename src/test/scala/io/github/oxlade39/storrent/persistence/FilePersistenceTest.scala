@@ -123,7 +123,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
       }
 
       val FolderPersistence.Done(dir) = expectMsgType[FolderPersistence.Done]
-      dir.listFiles().map(_.getName).toList mustEqual FolderPersistenceTest.files.map(_.name)
+      dir.listFiles().map(_.getName).toSet mustEqual FolderPersistenceTest.files.map(_.name).toSet
 
       dir.listFiles() foreach { written =>
         val result = FolderPersistenceTest.results.find {
