@@ -30,7 +30,10 @@ object Example extends App with FileOps {
       pieceManager <- context.actorSelection(download.path / "piece-manager").resolveOne(30.seconds)
       response <- (pieceManager ? PieceManager.GetPeerPieceMappings).mapTo[PeerPieceMappings]
     } yield {
-      log.info("downloaded {} pieces ({}%) @ {}", response.localPieces.has.size, (response.localPieces.has.size.toDouble / response.localPieces.size) * 100, dateFormat(when))
+      log.info("downloaded {} pieces ({}%) @ {}",
+        response.localPieces.has.size,
+        (response.localPieces.has.size.toDouble / response.localPieces.size) * 100,
+        dateFormat(when))
     }
 
     def findPeerManager(when: Date) = for {

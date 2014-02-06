@@ -46,9 +46,14 @@ class Tracker(torrent: Torrent) extends Actor with ActorLogging {
     case r: NormalTrackerResponse =>
       unwatch(client)
       parent ! Discovered(r.peers)
-      context.system.scheduler.scheduleOnce(r.clientRequestInterval, new Runnable {
+      val nextRequestDelay = r.minimumAnnounceInterval.getOrElse {
+        import concurrent.duration._
+        r.clientRequestInterval.min(10.seconds)
+      }
+      val ctx = context
+      ctx.system.scheduler.scheduleOnce(nextRequestDelay, new Runnable {
         override def run() {
-          context.become(awaitingResponse(watch(actorOf(clientFor(current), "tracker-client")), current))
+          ctx.become(awaitingResponse(watch(actorOf(clientFor(current), "tracker-client")), current))
         }
       })
 

@@ -10,9 +10,6 @@ import concurrent.duration._
 import scala.util.Random
 import io.github.oxlade39.storrent.core.Torrent
 
-/**
- * @author dan
- */
 class PieceDownloaderTest extends TestKit(ActorSystem("PieceDownloaderTest"))
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers with FileOps with RandomOps{
 
@@ -108,6 +105,38 @@ class PieceDownloaderTest extends TestKit(ActorSystem("PieceDownloaderTest"))
       expectTerminated(pd)
 
       success.downloadPiece.contiguousStream mustEqual Some(pieceBytes)
+    }
+
+    "reject the piece if the hash doesn't match" in {
+      val peer = TestProbe()
+      val maxPendingRequests = 3
+      val requestLength = 10
+      val pieceBytes = ByteString(
+        s"""
+          |Some bytes that will be split up into length of $requestLength.
+          |Hello Torrent world!
+        """.stripMargin
+      )
+      val totalPieceSize: Int = pieceBytes.size
+      val initialPiece = DownloadPiece(index = 5,
+        size = totalPieceSize,
+        offset = 5 * totalPieceSize,
+        hash = ByteString("bad hash"))
+
+      val pd = watch(system.actorOf(Props(new ForwardingParent(PieceDownloader.props(
+        peer.ref, initialPiece, maxPendingRequests, requestLength
+      ), testActor))))
+
+      val pieces = for {
+        (blockBytes, index) <- pieceBytes.grouped(requestLength).zipWithIndex
+      } yield Piece(5, index * requestLength, blockBytes)
+
+      pieces foreach { p =>
+        peer.expectMsgPF(){ case PeerConnection.Send(r: Request) => r }
+        peer.reply(p)
+      }
+
+      expectTerminated(pd, 5.minutes)
     }
   }
 

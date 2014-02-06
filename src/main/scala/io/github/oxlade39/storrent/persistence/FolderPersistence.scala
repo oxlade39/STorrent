@@ -8,6 +8,7 @@ import io.github.oxlade39.storrent.peer.DownloadPiece
 import akka.util.ByteString
 import org.apache.commons.io.FileUtils
 import io.github.oxlade39.storrent.persistence.FolderPersistence.FileOffset
+import scala.collection.SortedSet
 
 object Persistence {
   case class Persist(piece: DownloadPiece)
@@ -117,13 +118,24 @@ class FilePersistence(targetFile: File,
                       fileOffset: FileOffset) extends Actor with ActorLogging {
   import FilePersistence._
 
-  var written = 0
+  var written = SortedSet.empty[FileOffset](Ordering.fromLessThan((a, b) => a.startOffset < b.startOffset))
+
+  // TODO this could be compacted on ReceiveTimeout messages
+  def isCompleted: Boolean = written.foldLeft[Option[FileOffset]](Some(FileOffset(0, 0))){(accum, offset) => accum match {
+    case Some(FileOffset(accumStart, accumEnd)) if accumEnd >= offset.startOffset =>
+       Some(FileOffset(accumStart, offset.endOffset.max(accumEnd)))
+    case _ => Option.empty[FileOffset]
+  }} match {
+    case Some(offset) => offset.size == fileOffset.size
+    case _ => false
+  }
 
   val (output, channel, partial) = {
     val p = new File(targetFile.getAbsolutePath + "." + partialFileSuffix)
     
     if (!p.exists()) {
       log.info("{} does not exist yet", p)
+      FileUtils.forceMkdir(p.getParentFile)
       assert(p.createNewFile(), s"couldn't create $p")
       if (!p.getParentFile.exists()) {
         log.info("{} does not exist so attempting to create: {}",
@@ -136,11 +148,12 @@ class FilePersistence(targetFile: File,
   }
 
   def receive = LoggingReceive {
+    case _ if isCompleted => // ignore
     case Write(block, blockOffset) =>
       log.debug("{} writing to position {}", targetFile, blockOffset)
       channel.write(block.asByteBuffer, blockOffset)
-      written += block.size
-      if (written >= fileOffset.size) {
+      written += FileOffset(blockOffset, blockOffset + block.size)
+      if (isCompleted) {
         log.info("{} should now be complete, writing out", targetFile)
         channel.force(true)
         output.close()

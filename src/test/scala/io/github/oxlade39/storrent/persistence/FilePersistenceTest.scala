@@ -1,7 +1,7 @@
 package io.github.oxlade39.storrent.persistence
 
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
 import org.scalatest.matchers.MustMatchers
 import io.github.oxlade39.storrent.test.util.{ForwardingParent, FileOps}
@@ -24,7 +24,6 @@ class FilePersistenceTest extends TestKit(ActorSystem("FilePersistenceTest"))
 
   "FilePersistence" must {
     "write a file to disk" in {
-
       val testOut = new File("target") / "testOut" / s"FilePersistenceTest${Random.nextLong()}"
       testOut.delete()
 
@@ -52,6 +51,37 @@ class FilePersistenceTest extends TestKit(ActorSystem("FilePersistenceTest"))
       val fileAsString = Source.fromFile(done.file).getLines().mkString("\n")
       val rawBytesAsString = fileContent.utf8String
       fileAsString mustEqual rawBytesAsString
+    }
+
+    "not complete prematurely when sent duplicate pieces" in {
+      val testOut = new File("target") / "testOut" / s"FilePersistenceTest${Random.nextLong()}"
+      testOut.delete()
+
+      val fileContent =
+        ByteString("""
+                     |Lorum ipsumLorum ipsumLorum ipsumLorum ipsumLorum ipsumLorum ipsumLorum ipsumLorum ipsum
+                     |This is the body of a test file which
+                     |
+                     |should be broken up into pieces
+                     |
+                     |and writtin to file
+                   """.stripMargin)
+
+      val underTest = system.actorOf(Props(new ForwardingParent(
+        FilePersistence.props(toPersistInto = testOut, fileOffset = FolderPersistence.FileOffset(0, fileContent.size)),
+        testActor)))
+
+      val writes = for {
+        (block, offsetIndex) <- Random.shuffle(fileContent.grouped(10).zipWithIndex)
+      } yield FilePersistence.Write(block, offsetIndex * 10)
+
+      val doubledUp = writes.toList.flatMap(write => List(write, write))
+      val firstHalf = doubledUp take (doubledUp.size / 2) + 1
+      val secondHalf = doubledUp drop (doubledUp.size / 2) + 1
+      firstHalf foreach (underTest ! _)
+      expectNoMsg()
+      secondHalf foreach (underTest ! _)
+      expectMsgType[FilePersistence.Done]
     }
   }
 

@@ -16,6 +16,10 @@ class TrackerTest extends TestKit(ActorSystem("TrackerTest"))
 with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar with MustMatchers  {
   import TrackerTest._
 
+  override protected def afterAll() {
+    system.shutdown()
+  }
+
   "Tracker" must {
     "send initial messages to the first tier" in {
       val torrent = mock[Torrent]
@@ -60,7 +64,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar w
       when(torrent.announceList).thenReturn(tiers)
       val httpTracker = TestProbe()
 
-      val clientRequestInterval = 1.second
+      val minClientRequestInterval = 1.second
       val children =
         tiers(0).map(uri => (uri, httpTracker.ref)).toMap
 
@@ -68,7 +72,8 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar w
 
       httpTracker.expectMsgType[TrackerRequest]
       httpTracker.reply(NormalTrackerResponse(
-        clientRequestInterval = clientRequestInterval,
+        clientRequestInterval = 30.seconds,
+        minimumAnnounceInterval = Some(minClientRequestInterval),
         numberOfCompletedPeers = 100,
         numberOfUncompletedPeers = 100,
         peers = Nil
@@ -78,7 +83,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar w
 
       httpTracker.expectMsgType[TrackerRequest]
       httpTracker.reply(NormalTrackerResponse(
-        clientRequestInterval = clientRequestInterval,
+        clientRequestInterval = minClientRequestInterval,
         numberOfCompletedPeers = 100,
         numberOfUncompletedPeers = 100,
         peers = List(peer)
@@ -118,7 +123,8 @@ object TrackerTest {
   def peer = Peer(new InetSocketAddress("peer.com", 8080), PeerId("peer.com"))
 
   def normalResponse = NormalTrackerResponse(
-    clientRequestInterval = 0.seconds,
+    clientRequestInterval = 30.seconds,
+    minimumAnnounceInterval = Some(30.seconds),
     numberOfCompletedPeers = 1,
     numberOfUncompletedPeers = 99,
     peers = List(peer)

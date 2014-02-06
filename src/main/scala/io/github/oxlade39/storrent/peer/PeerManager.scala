@@ -8,7 +8,7 @@ import io.github.oxlade39.storrent.core.Torrent
 object PeerManager {
   import concurrent.duration._
 
-  val MaxConnections = 30
+  val MaxConnections = 50
   val checkStatusDuration = 500.millis
 
   def props(torrent: Torrent, pieceManager: ActorRef) =
@@ -34,6 +34,7 @@ class PeerManager(torrent: Torrent,
   import SupervisorStrategy._
 
   var allPeers = Set.empty[Peer]
+  var peerBlackList = Set.empty[Peer]
   var connectedPeers = Map.empty[ActorRef, Peer]
   def unconnectedPeers = allPeers.filterNot(p => connectedPeers.exists(kv => kv._2 == p))
 
@@ -51,8 +52,9 @@ class PeerManager(torrent: Torrent,
 
   def receive = LoggingReceive {
     case Discovered(peers) =>
-      log.info("discovered {} peers", peers.size)
-      allPeers ++= peers
+      val notBlacklisted = peers.filterNot(peerBlackList.contains)
+      allPeers ++= notBlacklisted
+      log.info("discovered {} peers, now we know {} total peers", notBlacklisted.size, allPeers.size)
 
     case CheckStatus =>
       if (connectedPeers.size < MaxConnections) {
@@ -70,6 +72,7 @@ class PeerManager(torrent: Torrent,
       val peer = connectedPeers.get(peerConnection)
       peer foreach { p =>
         allPeers -= p
+        connectedPeers.get(peerConnection) foreach (p => peerBlackList += p)
         connectedPeers -= peerConnection
       }
   }

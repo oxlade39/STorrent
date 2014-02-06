@@ -4,7 +4,8 @@
         <!-- encoders are assigned the type
              ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <!--<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+            <pattern>[%thread] %highlight(%-5level) %cyan(%logger{15}) - %msg %n</pattern>
         </encoder>
     </appender>
 
@@ -24,24 +25,31 @@
         </encoder>
     </appender>
 
-    <logger name="io.github.oxlade39" level="INFO">
-        <appender-ref ref="STDOUT"/>
+    <!--<logger name="io.github.oxlade39" level="DEBUG" additivity="false">-->
+    <!--<appender-ref ref="FILE"/>-->
+    <!--</logger>-->
+
+    <logger name="io.github.oxlade39.storrent" level="DEBUG" additivity="false">
         <appender-ref ref="FILE"/>
     </logger>
 
-    <logger name="akka.io" level="INFO">
+    <logger name="io.github.oxlade39.storrent.example" level="DEBUG" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <!--<logger name="io.github.oxlade39" level="WARN" additivity="false">-->
+    <!--<appender-ref ref="STDOUT"/>-->
+    <!--</logger>-->
+
     <!--<logger name="io.github.oxlade39.storrent.peer.PieceDownloader" level="DEBUG">-->
-        <!--<appender-ref ref="FILE"/>-->
+    <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 
     <!--<logger name="io.github.oxlade39.storrent.peer.DownloadWorker" level="DEBUG">-->
-        <!--<appender-ref ref="FILE"/>-->
+    <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 
-    <root level="info">
+    <root level="WARN">
         <appender-ref ref="STDOUT"/>
     </root>
 

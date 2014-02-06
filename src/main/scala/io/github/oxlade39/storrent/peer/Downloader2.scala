@@ -21,7 +21,7 @@ object DownloadWorkPullingPattern {
 }
 
 object Downloader2 {
-  val MaxDownloads = 10
+  val MaxDownloads = 30
 
   case class ConnectedPeerStatus(peerRef: ActorRef,
     peerId: PeerId,
@@ -189,7 +189,7 @@ class DownloadWorker(workQueue: ActorRef,
       context.become(waitingForWork)
 
     case ReceiveTimeout =>
-      if ((timeouts + 1) > 50) {
+      if ((timeouts + 1) > 10) {
         log.warning("killing downloader {} for {}", downloader, task)
         context.stop(downloader)
       } else {
@@ -203,8 +203,7 @@ class DownloadWorker(workQueue: ActorRef,
       workQueue ! TaskDone(task)
       workQueue ! RequestWork
       pieceManager ! PieceDownloader.Success(piece)
-      context.become(waitingForWork
-      )
+      context.become(waitingForWork)
   }
 
   def pieceDownloader(task: DownloadTask): Props = PieceDownloader.props(
