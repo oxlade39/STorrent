@@ -1,7 +1,10 @@
 target
-project
+project/target
+project/project
 *.iml
 .idea
 .idea_modules
 logs/
 spy/
+.DS_Store
+downloads/
