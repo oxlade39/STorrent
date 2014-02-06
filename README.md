@@ -7,6 +7,8 @@
 abstractions around establishing connections with peers, reading/write bytestreams and parsing those bytestreams into
 [BitTorrent's message model](https://wiki.theory.org/BitTorrentSpecification#Messages).
 
+[![Build Status](https://travis-ci.org/oxlade39/STorrent.png?branch=master)](https://travis-ci.org/oxlade39/STorrent)
+
 ### Inspiration
 *STorrent* was heavily inspired by [Ttorrent](https://github.com/mpetazzoni/ttorrent) which I initially attempted to
 port to Akka but then decided to start entirely from scratch after taking the [Coursera](https://www.coursera.org/)
