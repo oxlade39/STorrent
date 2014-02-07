@@ -22,7 +22,7 @@ Reactive Programming course.
 If you contribute please be sure to add plenty of tests.
 
 ### Examples
-Examples are placed in the _io.github.oxlade39.storrent.example_ package
+Examples are placed in the `io.github.oxlade39.storrent.example` package
 
 Distilled:
 
@@ -31,7 +31,7 @@ Distilled:
     val download = sys.actorOf(StorrentDownload.props("examples" / "ubuntu-13.10-desktop-amd64.iso.torrent"), "ubuntu")
 
 #### Ubuntu download example
-_io.github.oxlade39.storrent.example.Example_ demonstrates one example usage of *STorrent* and can be used to successfully
+`io.github.oxlade39.storrent.example.Example` demonstrates one example usage of *STorrent* and can be used to successfully
  download [Ubuntu](http://www.ubuntu.com/)
 
 ### Unfinished
@@ -51,23 +51,23 @@ The remaining work will be tracked in the issues section, the focus on working t
 
 Notable implementation areas:
 
-#### *io.github.oxlade39.storrent.core*
-- *Torrent* The torrent file model
-- *BencodeParser* implementation of [Bencode](https://wiki.theory.org/BitTorrentSpecification#Bencoding) parsing
-- *BValue* case classes representing the different [Bencoded](https://wiki.theory.org/BitTorrentSpecification#Bencoding) types
+#### `io.github.oxlade39.storrent.core`
+- `Torrent` The torrent file model
+- `BencodeParser` implementation of [Bencode](https://wiki.theory.org/BitTorrentSpecification#Bencoding) parsing
+- `BValue` case classes representing the different [Bencoded](https://wiki.theory.org/BitTorrentSpecification#Bencoding) types
 
-#### *io.github.oxlade39.storrent.example*
-- *Example* An example of using *STorrent* to download Ubuntu
+#### `io.github.oxlade39.storrent.example`
+- `Example` An example of using *STorrent* to download Ubuntu
 
 There is currently no notification of final completion but this shouldn't be hard to add...
 
-#### *io.github.oxlade39.storrent.peer*
+#### `io.github.oxlade39.storrent.peer`
 
-#### *io.github.oxlade39.storrent.persistence*
-Folder and single File persistence, using *java.nio*
+#### `io.github.oxlade39.storrent.persistence`
+Folder and single File persistence, using `java.nio`
 
-#### *io.github.oxlade39.storrent.piece*
-- *Downloader2* Actor currently responsible for managing and co-ordinating child actors which request and download the
+#### `io.github.oxlade39.storrent.piece`
+- `Downloader2` Actor currently responsible for managing and co-ordinating child actors which request and download the
  individual pieces and blocks. It currently uses a work pulling pattern to queue the available work (pieces from peers)
  and allow workers to request the next download task (piece from peer) to work on.
 
