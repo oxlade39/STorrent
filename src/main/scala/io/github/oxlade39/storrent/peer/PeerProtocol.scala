@@ -4,14 +4,15 @@ import akka.actor._
 import akka.io.{PipelineFactory, PipelineContext}
 import akka.event.LoggingReceive
 import akka.util.ByteString
+import io.github.oxlade39.storrent.core.Torrent
 
 object PeerProtocol {
 
-  def props = Props(new PeerProtocol)
+  def props(torrent: Torrent) = Props(new PeerProtocol(torrent))
 
   case object GetPeerStatus
 
-  case class PeerStatus(choked: Boolean = true, interested: Boolean = false, pieces: Option[Bitfield] = None) {
+  case class PeerStatus(choked: Boolean = true, interested: Boolean = false, pieces: Bitfield) {
     def unchoke = copy(choked = false)
     def choke = copy(choked = true)
     def interested_! = copy(interested = true)
@@ -19,13 +20,12 @@ object PeerProtocol {
   }
 }
 
-class PeerProtocol extends Actor with ActorLogging {
+class PeerProtocol(torrent: Torrent) extends Actor with ActorLogging {
   import PeerProtocol._
   import PeerConnection._
   import concurrent.duration._
 
-  var localPeer = PeerStatus()
-  var remotePeer = PeerStatus()
+  var localPeer, remotePeer = PeerStatus(pieces = Bitfield(torrent.pieceHashes.map(_ => false)))
 
   var activeDownloader = Option.empty[ActorRef]
 
@@ -47,15 +47,16 @@ class PeerProtocol extends Actor with ActorLogging {
       remotePeer = remotePeer.notInterested
 
     case Received(Interested) =>
+      log.debug("peer is interested in our pieces, we should unchoke at some point")
       remotePeer = remotePeer.interested_!
 
     case Received(bf: Bitfield) =>
-      remotePeer = remotePeer.copy(pieces = Some(bf))
+      remotePeer = remotePeer.copy(pieces = bf)
       context.parent ! remotePeer
 
-    case Received(Have(pieceIndex)) if remotePeer.pieces.isDefined =>
-      val updatedBitFieldOption = remotePeer.pieces.map(current => current.set(pieceIndex))
-      remotePeer = remotePeer.copy(pieces = updatedBitFieldOption)
+    case Received(Have(pieceIndex)) =>
+      val updatedBitfield = remotePeer.pieces.set(pieceIndex)
+      remotePeer = remotePeer.copy(pieces = updatedBitfield)
       context.parent ! remotePeer
 
     case Send(NotInterested) =>

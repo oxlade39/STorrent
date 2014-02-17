@@ -118,8 +118,8 @@ class WorkFetcher(peerManager: ActorRef,
     implicit val timeout = Timeout(3.seconds)
     (peerRef ? PeerProtocol.GetPeerStatus).mapTo[(PeerProtocol.PeerStatus, PeerProtocol.PeerStatus)] recover {
       case t: TimeoutException =>
-        (PeerProtocol.PeerStatus(choked = true, interested = false),
-          PeerProtocol.PeerStatus(choked = true, interested = false))
+        (PeerProtocol.PeerStatus(choked = true, interested = false, pieces = Bitfield(Seq())),
+          PeerProtocol.PeerStatus(choked = true, interested = false, pieces = Bitfield(Seq())))
     }
   }
 

@@ -76,7 +76,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
 
 
   def peerProtocol() =
-    watch(actorOf(PeerProtocol.props, "peer-protocol"))
+    watch(actorOf(PeerProtocol.props(torrent), "peer-protocol"))
 
   def connected(protocolProcessor: ActorRef,
                 peerProtocol: ActorRef,
@@ -93,7 +93,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
       peerProtocol forward Received(message)
 
     case status: PeerProtocol.PeerStatus =>
-      status.pieces map (p => PieceManager.PeerHasPieces(peer.id, p.trimmed(torrent))) foreach (pieceManager ! _)
+      pieceManager ! PieceManager.PeerHasPieces(peer.id, status.pieces.trimmed(torrent))
 
     case PeerProtocol.GetPeerStatus =>
       peerProtocol forward PeerProtocol.GetPeerStatus

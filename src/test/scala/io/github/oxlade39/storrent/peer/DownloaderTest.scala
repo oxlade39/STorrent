@@ -57,8 +57,8 @@ class DownloaderTest extends TestKit(ActorSystem("DownloaderTest"))
       peerManager.reply(PeerManager.ConnectedPeers(Map(connectedPeer.ref -> Peer(new InetSocketAddress(0)))))
       connectedPeer.expectMsg(PeerProtocol.GetPeerStatus)
       val status = (
-        PeerProtocol.PeerStatus(choked = true, interested = true), // local
-        PeerProtocol.PeerStatus(choked = true, interested = false)
+        PeerProtocol.PeerStatus(choked = true, interested = true, pieces = Bitfield(Seq())), // local
+        PeerProtocol.PeerStatus(choked = true, interested = false, pieces = Bitfield(Seq()))
       )
       connectedPeer.reply(status)
 
@@ -76,8 +76,8 @@ class DownloaderTest extends TestKit(ActorSystem("DownloaderTest"))
       peerManager.reply(PeerManager.ConnectedPeers(Map(connectedPeer.ref -> Peer(new InetSocketAddress(0)))))
       connectedPeer.expectMsg(PeerProtocol.GetPeerStatus)
       val status = (
-        PeerProtocol.PeerStatus(choked = false, interested = true), // local
-        PeerProtocol.PeerStatus(choked = true, interested = false)
+        PeerProtocol.PeerStatus(choked = false, interested = true, pieces = Bitfield(Seq())), // local
+        PeerProtocol.PeerStatus(choked = true, interested = false, pieces = Bitfield(Seq()))
       )
       connectedPeer.reply(status)
       pieceManager.expectMsg(PieceManager.GetPeerPieceMappings)
@@ -95,8 +95,8 @@ class DownloaderTest extends TestKit(ActorSystem("DownloaderTest"))
       peerManager.reply(PeerManager.ConnectedPeers(Map(connectedPeer.ref -> Peer(new InetSocketAddress(0), peerId))))
       connectedPeer.expectMsg(PeerProtocol.GetPeerStatus)
       val status = (
-        PeerProtocol.PeerStatus(choked = false, interested = true), // local
-        PeerProtocol.PeerStatus(choked = true, interested = false)
+        PeerProtocol.PeerStatus(choked = false, interested = true, pieces = Bitfield(Seq())), // local
+        PeerProtocol.PeerStatus(choked = true, interested = false, pieces = Bitfield(Seq()))
       )
       connectedPeer.reply(status)
       pieceManager.expectMsg(PieceManager.GetPeerPieceMappings)
