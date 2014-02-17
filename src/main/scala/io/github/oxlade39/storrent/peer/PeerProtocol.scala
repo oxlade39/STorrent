@@ -65,6 +65,12 @@ class PeerProtocol(torrent: Torrent) extends Actor with ActorLogging {
     case Send(Interested) =>
       localPeer = localPeer.interested_!
 
+    case Send(Choke) =>
+      remotePeer = remotePeer.choke
+
+    case Send(UnChoke) =>
+      remotePeer = remotePeer.unchoke
+
     case Send(Request(index, _, _)) =>
       if (activeDownloader.isDefined && activeDownloader.get != sender)
         log.warning("overwriting existing downloader {}", activeDownloader.get)
