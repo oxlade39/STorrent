@@ -12,3 +12,7 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "1.9.5" % "test")
 
 atmosSettings
+
+ScoverageSbtPlugin.instrumentSettings
+
+CoverallsPlugin.coverallsSettings
