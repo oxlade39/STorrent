@@ -14,5 +14,3 @@ libraryDependencies ++= Seq(
 atmosSettings
 
 ScoverageSbtPlugin.instrumentSettings
-
-CoverallsPlugin.coverallsSettings
