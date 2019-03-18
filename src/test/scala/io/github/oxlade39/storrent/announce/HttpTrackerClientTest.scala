@@ -7,10 +7,10 @@ import akka.util.ByteString
 import scala.concurrent.Future
 import java.net.URL
 import io.github.oxlade39.storrent.test.util.StepParent
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.mockito.Mockito._
 import io.github.oxlade39.storrent.core.{BInt, Torrent, BBytes, BMap}
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 
 
 class HttpTrackerClientTest extends TestKit(ActorSystem("HttpTrackerClientTest"))
@@ -18,7 +18,7 @@ class HttpTrackerClientTest extends TestKit(ActorSystem("HttpTrackerClientTest")
   import HttpTrackerClientTest._
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "HttpTrackerClient" must {

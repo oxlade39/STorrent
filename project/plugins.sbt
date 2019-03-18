@@ -1,5 +1,1 @@
-logLevel := Level.Warn
-
-resolvers += Classpaths.sbtPluginReleases
-
-addSbtPlugin("com.sksamuel.scoverage" %% "sbt-scoverage" % "0.95.7")
+//addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.4")

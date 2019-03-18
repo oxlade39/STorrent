@@ -1,7 +1,7 @@
 package io.github.oxlade39.storrent.core
 
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import akka.util.ByteString
 
 /**

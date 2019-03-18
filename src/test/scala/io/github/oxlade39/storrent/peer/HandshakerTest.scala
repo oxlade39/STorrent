@@ -3,8 +3,8 @@ package io.github.oxlade39.storrent.peer
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike, FunSuite}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{ActorRef, Props, ActorSystem}
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.test.util.{ForwardingParent, FosterParent, StepParent}
 import akka.io.Tcp
 import akka.util.ByteString

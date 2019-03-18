@@ -3,7 +3,7 @@ package io.github.oxlade39.storrent
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.actor._
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.test.util.FileOps
 import concurrent.duration._
 import akka.io.{IO, Tcp}
@@ -23,7 +23,7 @@ class StorrentDownloadIntegrationTest extends TestKit(ActorSystem("StorrentDownl
   import StorrentDownloadIntegrationTest._
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "StorrentDownloadIntegrationTest" must {

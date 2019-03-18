@@ -2,7 +2,7 @@ package io.github.oxlade39.storrent.peer
 
 import org.scalatest.{WordSpec, FunSuite}
 import akka.util.ByteString
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import scala.util.Random
 
 class HandshakeTest extends WordSpec with MustMatchers {

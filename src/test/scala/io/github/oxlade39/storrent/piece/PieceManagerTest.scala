@@ -3,7 +3,7 @@ package io.github.oxlade39.storrent.piece
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{Actor, Props, ActorSystem}
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.peer._
 import io.github.oxlade39.storrent.test.util.Files._
 

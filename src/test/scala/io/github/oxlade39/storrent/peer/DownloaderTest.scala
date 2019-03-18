@@ -3,7 +3,7 @@ package io.github.oxlade39.storrent.peer
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.test.util.{ForwardingParent, Files, FileOps}
 import java.net.InetSocketAddress
 import io.github.oxlade39.storrent.piece.PieceManager
@@ -19,7 +19,7 @@ class DownloaderTest extends TestKit(ActorSystem("DownloaderTest"))
   import concurrent.duration._
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "Downloader" must {

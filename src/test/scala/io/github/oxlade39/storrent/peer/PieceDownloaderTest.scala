@@ -3,7 +3,7 @@ package io.github.oxlade39.storrent.peer
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.test.util.{RandomOps, ForwardingParent, FileOps}
 import akka.util.ByteString
 import concurrent.duration._

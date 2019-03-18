@@ -5,7 +5,7 @@ import io.github.oxlade39.storrent.peer.{Block, DownloadPiece}
 import akka.util.ByteString
 import io.github.oxlade39.storrent.core.Torrent
 import io.github.oxlade39.storrent.persistence.FolderPersistence.FileOffset
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 
 
 class FileOffsetTest extends WordSpec with MustMatchers {

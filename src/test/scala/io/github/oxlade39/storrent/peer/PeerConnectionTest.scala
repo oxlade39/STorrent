@@ -3,7 +3,7 @@ package io.github.oxlade39.storrent.peer
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor._
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.test.util.{ForwardingParent, FileOps}
 import akka.io.{Tcp, IO}
 import java.net.InetSocketAddress
@@ -20,7 +20,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
   import io.github.oxlade39.storrent.piece.PieceManager._
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "PeerConnection" must {
@@ -45,9 +45,9 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
     "notifies piece manager with bitfield of new peer" in {
       val fakePeer = new FakePeer
 
-      val fakePieceManager = TestProbe()
+      val fakePieceManager = TestProbe("fakePieceManager")
 
-      val peer: Peer = new Peer(fakePeer.peerAddress)
+      val peer: Peer = Peer(fakePeer.peerAddress)
       val torrent: Torrent = Torrent("examples" / "ubuntu.torrent")
       val peerConnection = system.actorOf(PeerConnection.props(peer, torrent, fakePieceManager.ref))
 
@@ -58,7 +58,8 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
       val allPieces = Bitfield(torrent.pieceHashes.map(_ => true))
       fakePeer.sends(allPieces) // the fakePeer has all the pieces
 
-      fakePieceManager.expectMsg(PeerHasPieces(peer.id, allPieces))
+      val received = fakePieceManager.expectMsgType[PeerHasPieces]
+      assert(received == PeerHasPieces(peer.id, allPieces))
     }
   }
 
@@ -69,8 +70,9 @@ object PeerConnectionTest {
   def fakePeerProps(remoteControl: ActorRef)= Props(new FakePeerActor(remoteControl))
 
   class FakePeer(implicit val system: ActorSystem) {
-    val remoteControl = TestProbe()
-    val actor = system.actorOf(Props(new ForwardingParent(fakePeerProps(remoteControl.ref), remoteControl.ref)))
+    val remoteControl = TestProbe("fake-peer-remote")
+    val actor = system.actorOf(
+      Props(new ForwardingParent(fakePeerProps(remoteControl.ref), remoteControl.ref)))
 
     val peerAddress = remoteControl.expectMsgType[Tcp.Bound].localAddress
 
@@ -104,6 +106,7 @@ object PeerConnectionTest {
     def receive = {
       case bound: Tcp.Bound => parent ! bound
       case msg: Message if sender == remoteControl =>
+        log.debug("sending message {} to {}", msg, connection)
         connection foreach (_ ! Tcp.Write(msg.encode))
       case hs: Handshake if sender == remoteControl =>
         connection foreach (_ ! Tcp.Write(hs.encoded))

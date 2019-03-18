@@ -7,7 +7,7 @@ import java.net.URL
 import io.github.oxlade39.storrent.test.util.{FileOps, StepParent}
 import io.github.oxlade39.storrent.core.Torrent
 import io.github.oxlade39.storrent.peer.PeerId
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import akka.util.ByteString
 import scala.concurrent.duration._
 
@@ -16,7 +16,7 @@ class HttpTrackerClientIntegrationTest extends TestKit(ActorSystem("HttpTrackerC
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers with FileOps {
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "HttpTrackerClient" must {

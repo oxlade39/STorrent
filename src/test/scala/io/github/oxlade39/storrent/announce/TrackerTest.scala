@@ -3,8 +3,8 @@ package io.github.oxlade39.storrent.announce
 import org.scalatest.{WordSpecLike, BeforeAndAfterAll}
 import akka.actor._
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.MustMatchers
 import java.net.{InetSocketAddress, URI}
 import io.github.oxlade39.storrent.core.Torrent
 import org.mockito.Mockito._
@@ -17,7 +17,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MockitoSugar w
   import TrackerTest._
 
   override protected def afterAll() {
-    system.shutdown()
+    system.terminate()
   }
 
   "Tracker" must {

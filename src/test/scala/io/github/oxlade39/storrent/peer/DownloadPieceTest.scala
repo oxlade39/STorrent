@@ -1,7 +1,7 @@
 package io.github.oxlade39.storrent.peer
 
 import org.scalatest.WordSpecLike
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.core.Torrent
 import akka.util.ByteString
 import scala.collection.SortedSet

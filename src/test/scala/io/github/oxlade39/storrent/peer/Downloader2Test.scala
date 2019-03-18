@@ -2,10 +2,10 @@ package io.github.oxlade39.storrent.peer
 
 import org.scalatest.{WordSpecLike, BeforeAndAfterAll, WordSpec, FunSuite}
 import io.github.oxlade39.storrent.test.util.{ForwardingParent, FileOps}
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import akka.testkit.{TestProbe, TestKit, ImplicitSender}
 import akka.actor.{Actor, Props, ActorSystem}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import io.github.oxlade39.storrent.core.Torrent
 import java.net.InetSocketAddress
 import io.github.oxlade39.storrent.piece.PieceManager
@@ -21,7 +21,7 @@ class Downloader2Test extends TestKit(ActorSystem("Downloader2Test"))
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers with FileOps with MockitoSugar {
 
   override def afterAll() = {
-    system.shutdown()
+    system.terminate()
   }
 
   "WorkFetcher" must {

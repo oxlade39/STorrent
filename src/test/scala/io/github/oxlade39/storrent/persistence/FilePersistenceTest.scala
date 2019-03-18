@@ -3,13 +3,13 @@ package io.github.oxlade39.storrent.persistence
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import akka.actor.{Props, ActorSystem}
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import io.github.oxlade39.storrent.test.util.{ForwardingParent, FileOps}
 import java.io.File
 import scala.util.Random
 import akka.util.ByteString
 import scala.io.Source
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import io.github.oxlade39.storrent.core.{TorrentFile, Torrent}
 import io.github.oxlade39.storrent.peer.{Block, DownloadPiece}
 import org.mockito.Mockito
@@ -19,7 +19,7 @@ class FilePersistenceTest extends TestKit(ActorSystem("FilePersistenceTest"))
   with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers with FileOps {
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "FilePersistence" must {
@@ -48,7 +48,7 @@ class FilePersistenceTest extends TestKit(ActorSystem("FilePersistenceTest"))
       writes foreach (underTest ! _)
       val done = expectMsgType[FilePersistence.Done]
 
-      val fileAsString = Source.fromFile(done.file).getLines().mkString("\n")
+      val fileAsString = Source.fromFile(done.file).getLines().mkString(System.lineSeparator())
       val rawBytesAsString = fileContent.utf8String
       fileAsString mustEqual rawBytesAsString
     }
@@ -96,7 +96,7 @@ with WordSpecLike with BeforeAndAfterAll with ImplicitSender with MustMatchers w
   }
 
   override def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 
   "FolderPersistence" must {

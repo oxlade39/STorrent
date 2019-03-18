@@ -2,7 +2,7 @@ package io.github.oxlade39.storrent.core
 
 import org.scalatest.WordSpecLike
 import java.io.File
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.MustMatchers
 import java.net.URI
 import io.github.oxlade39.storrent.test.util.FileOps
 import akka.util.ByteString

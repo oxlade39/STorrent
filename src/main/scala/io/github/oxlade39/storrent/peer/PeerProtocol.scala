@@ -1,7 +1,9 @@
 package io.github.oxlade39.storrent.peer
 
 import akka.actor._
-import akka.io.{PipelineFactory, PipelineContext}
+import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source, SourceQueueWithComplete}
+// import akka.io.{PipelineFactory, PipelineContext}
 import akka.event.LoggingReceive
 import akka.util.ByteString
 import io.github.oxlade39.storrent.core.Torrent
@@ -108,16 +110,27 @@ class PeerProtocolProcessor(bytesProcessor: ActorRef,
                             messageProcessor: ActorRef)
   extends Actor with ActorLogging {
 
-  val ctx = new PipelineContext {}
+  import Pipeline._
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val pipeline =
-    PipelineFactory.buildWithSinkFunctions(ctx, new MessageStage >> new MessageTypeStage)(
-      cmd => bytesProcessor ! cmd.get,
-      evt => messageProcessor ! evt.get
-    )
+  val messageQueue: SourceQueueWithComplete[Message] =
+    Source.queue[Message](100, OverflowStrategy.backpressure)
+    .map(m => PartialMessage(m.length, m.messageId, m.payload.getOrElse(ByteString.empty)))
+    .map{pm =>
+      val bb = ByteString.newBuilder.putLongPart(pm.length, lengthBytes)
+      pm.messageId.foreach(mId => bb.putLongPart(mId, idBytes))
+      bb ++= pm.body
+    }
+    .toMat(Sink.foreach(bytes => bytesProcessor ! bytes))(Keep.left)
+    .run()
+
+  val bytesQueue: SourceQueueWithComplete[ByteString] =
+    ReactiveMessageParsing.byteStringParserQueue
+    .toMat(Sink.foreach(msg => messageProcessor ! msg))(Keep.left)
+    .run()
 
   def receive = LoggingReceive {
-    case m: Message => pipeline.injectCommand(m)
-    case b: ByteString => pipeline.injectEvent(b)
+    case m: Message => messageQueue.offer(m)
+    case b: ByteString => bytesQueue.offer(b)
   }
 }

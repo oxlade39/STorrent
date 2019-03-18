@@ -51,7 +51,7 @@ object Example extends App with FileOps {
   sys.scheduler.scheduleOnce(60 minutes, new Runnable {
     def run() {
       sys.stop(download)
-      sys.shutdown()
+      sys.terminate()
     }
   })
 }
