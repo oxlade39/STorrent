@@ -29,7 +29,7 @@
     <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 
-    <logger name="io.github.oxlade39.storrent" level="DEBUG" additivity="false">
+    <logger name="io.github.oxlade39.storrent" level="ERROR" additivity="false">
         <appender-ref ref="FILE"/>
     </logger>
 
@@ -43,6 +43,11 @@
 
     <!--<logger name="io.github.oxlade39.storrent.peer.PieceDownloader" level="DEBUG">-->
     <!--<appender-ref ref="FILE"/>-->
+    <!--</logger>-->
+
+    <!--<logger name="io.github.oxlade39.storrent.peer.PeerProtocol" level="DEBUG">-->
+        <!--<appender-ref ref="STDOUT"/>-->
+        <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 
     <!--<logger name="io.github.oxlade39.storrent.peer.DownloadWorker" level="DEBUG">-->

@@ -40,19 +40,19 @@ object StorrentDownload {
 }
 
 trait DownloadProps {
-  def trackerProps(torrent: Torrent) = announce.Tracker.props(torrent)
-  def peerManagerProps(torrent: Torrent, pieceManager: ActorRef) = PeerManager.props(torrent, pieceManager)
-  def pieceManagerProps(torrent: Torrent) = PieceManager.props(torrent)()
+  def trackerProps(torrent: Torrent): Props = announce.Tracker.props(torrent)
+  def peerManagerProps(torrent: Torrent, pieceManager: ActorRef): Props = PeerManager.props(torrent, pieceManager)
+  def pieceManagerProps(torrent: Torrent): Props = PieceManager.props(torrent)()
 }
 
 class StorrentDownload(file: File) extends Actor with ActorLogging with DownloadProps {
   import context._
   import peer.Discovered
 
-  val torrent = Torrent.fromFile(file)
-  val tracker = watch(actorOf(trackerProps(torrent), s"tracker-${torrent.name}"))
-  val pieceManager = actorOf(pieceManagerProps(torrent), "piece-manager")
-  val peers = actorOf(peerManagerProps(torrent, pieceManager), "peer-manager")
+  val torrent: Torrent = Torrent.fromFile(file)
+  val tracker: ActorRef = watch(actorOf(trackerProps(torrent), s"tracker-${torrent.name}"))
+  val pieceManager: ActorRef = actorOf(pieceManagerProps(torrent), "piece-manager")
+  val peers: ActorRef = actorOf(peerManagerProps(torrent, pieceManager), "peer-manager")
 
   def receive = LoggingReceive {
     case d @ Discovered(newPeers) =>

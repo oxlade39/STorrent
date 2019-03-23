@@ -21,7 +21,7 @@ object PeerConnection {
                                    localAddress: InetSocketAddress,
                                    remoteAddress: InetSocketAddress)
 
-  val connectionTimeout = 30.seconds
+  val connectionTimeout: FiniteDuration = 30.seconds
 
   case class Send(message: Message)
   case class Received(message: Message)
@@ -36,7 +36,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
 
   IO(Tcp) ! Tcp.Connect(peer.address, timeout = Some(connectionTimeout))
 
-  def receive = unconnected
+  def receive: Receive = unconnected
 
   def unconnected: Receive = LoggingReceive {
     case Tcp.Connected(remoteAddress, localAddress) =>
@@ -75,7 +75,7 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   }
 
 
-  def peerProtocol() =
+  def peerProtocol(): ActorRef =
     watch(actorOf(PeerProtocol.props(torrent), "peer-protocol"))
 
   def connected(protocolProcessor: ActorRef,
@@ -104,11 +104,10 @@ class PeerConnection(peer: Peer, torrent: Torrent, pieceManager: ActorRef) exten
   }
 
   def peerProtocolProcessor(connection: PeerConnection.EstablishedConnection): ActorRef =
-    watch(
-      actorOf(PeerProtocolProcessor.props(
+    watch(actorOf(PeerProtocolProcessor.props(
         bytesProcessor = actorOf(ConnectionWriter.props(connection.actorRef), "connection-writer"),
         messageProcessor = actorOf(MessageReceiver.props, "message-processor")),
-        "message-adapter"))
+      "message-adapter"))
 
 }
 
@@ -118,7 +117,8 @@ object ConnectionWriter {
 
 class ConnectionWriter(connection: ActorRef) extends Actor {
   def receive = {
-    case b: ByteString => connection ! Tcp.Write(b)
+    case b: ByteString =>
+      connection ! Tcp.Write(b)
   }
 }
 

@@ -20,7 +20,8 @@ object Example extends App with FileOps {
   import akka.pattern.ask
   implicit val timeout = Timeout(1.minute)
 
-  val download = sys.actorOf(StorrentDownload.props("examples" / "ubuntu-13.10-desktop-amd64.iso.torrent"), "ubuntu")
+  val file = "examples" / "ubuntu-18.04.2-desktop-amd64.iso.torrent"
+  val download = sys.actorOf(StorrentDownload.props(file), "ubuntu")
 
   sys.actorOf(Props(new Actor with ActorLogging {
 

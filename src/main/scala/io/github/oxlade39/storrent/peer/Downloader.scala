@@ -2,10 +2,12 @@ package io.github.oxlade39.storrent.peer
 
 import akka.actor._
 import akka.event.LoggingReceive
+
 import concurrent.duration._
 import scala.util.Random
 import scala.concurrent.Future
 import akka.util.Timeout
+import io.github.oxlade39.storrent.config.Settings
 import io.github.oxlade39.storrent.core.Torrent
 import io.github.oxlade39.storrent.peer.PeerProtocol.PeerStatus
 
@@ -33,6 +35,7 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
   import context._
   import akka.pattern._
 
+  val settings: Settings = Settings(context.system)
   var activeDownloads = Map.empty[Int, ActivePeerPieceDownload]
   system.scheduler.schedule(tryDownloadFrequency, tryDownloadFrequency, parent, PeerManager.GetConnectedPeers)
 
@@ -57,7 +60,7 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
             offset = torrent.pieceSize * pieceIndex,
             hash = torrent.pieceHashes(pieceIndex))
 
-      val downloader = watch(actorOf(PieceDownloader.props(peer, toDl), s"piece-$pieceIndex"))
+      val downloader = watch(actorOf(PieceDownloader.props(peer, toDl, settings.MaxConcurrentRequestsPerPeer), s"piece-$pieceIndex"))
       activeDownloads += (pieceIndex -> ActivePeerPieceDownload(pieceIndex, peer, downloader))
 
     case complete: PieceDownloader.Success =>
@@ -121,8 +124,6 @@ class Downloader(torrent: Torrent, pieceManager: ActorRef, tryDownloadFrequency:
 }
 
 object PieceDownloader {
-  val MAX_PIPELINED_REQUESTS = 5
-
   case class Success(downloadPiece: DownloadPiece)
   private[PieceDownloader] case class DownloadingPiece(pendingRequestOffsets: List[Int],
                                                        received: DownloadPiece,
@@ -130,12 +131,12 @@ object PieceDownloader {
 
   def props(peer: ActorRef,
             initialPiece: DownloadPiece,
-            maxPendingRequests: Int = PieceDownloader.MAX_PIPELINED_REQUESTS,
+            maxPendingRequests: Int,
             requestLength: Int = Request.DEFAULT_REQUEST_SIZE) =
     Props(new PieceDownloader(peer, initialPiece, maxPendingRequests, requestLength))
 }
 
-class PieceDownloader(peer: ActorRef,
+class PieceDownloader (peer: ActorRef,
                       initialPiece: DownloadPiece,
                       maxPendingRequests: Int,
                       requestLength: Int)
@@ -148,7 +149,7 @@ class PieceDownloader(peer: ActorRef,
   watch(peer)
   startDownloading(initialPiece)
 
-  def startDownloading(p: DownloadPiece) = {
+  def startDownloading(p: DownloadPiece): Unit = {
     log.info("starting download")
     val pendingRequestOffsets = 0.until(maxPendingRequests).reverseMap { offsetIndex ⇒
       val offset = requestLength * offsetIndex
@@ -159,7 +160,7 @@ class PieceDownloader(peer: ActorRef,
     become(downloading(piece))
   }
 
-  def request(pieceIndex: Int, offset: Int, length: Int =  requestLength) = {
+  def request(pieceIndex: Int, offset: Int, length: Int =  requestLength): Unit = {
     log.debug("sending request for {}:+{} to {}", pieceIndex, offset, peer)
     peer ! PeerConnection.Send(Request(pieceIndex, offset, length))
   }

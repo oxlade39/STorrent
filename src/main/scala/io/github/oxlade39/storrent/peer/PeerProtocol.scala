@@ -1,10 +1,9 @@
 package io.github.oxlade39.storrent.peer
 
 import akka.actor._
-import akka.stream.{ActorMaterializer, OverflowStrategy}
-import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source, SourceQueueWithComplete}
-// import akka.io.{PipelineFactory, PipelineContext}
 import akka.event.LoggingReceive
+import akka.stream.scaladsl.{Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.util.ByteString
 import io.github.oxlade39.storrent.core.Torrent
 
@@ -15,16 +14,17 @@ object PeerProtocol {
   case object GetPeerStatus
 
   case class PeerStatus(choked: Boolean = true, interested: Boolean = false, pieces: Bitfield) {
-    def unchoke = copy(choked = false)
-    def choke = copy(choked = true)
-    def interested_! = copy(interested = true)
-    def notInterested = copy(interested = false)
+    def unchoke: PeerStatus = copy(choked = false)
+    def choke: PeerStatus = copy(choked = true)
+    def interested_! : PeerStatus = copy(interested = true)
+    def notInterested: PeerStatus = copy(interested = false)
   }
 }
 
 class PeerProtocol(torrent: Torrent) extends Actor with ActorLogging {
-  import PeerProtocol._
   import PeerConnection._
+  import PeerProtocol._
+
   import concurrent.duration._
 
   var localPeer, remotePeer = PeerStatus(pieces = Bitfield(torrent.pieceHashes.map(_ => false)))
@@ -99,7 +99,7 @@ object PeerProtocolProcessor {
 }
 
 /**
- * Proxy infront of client peer.
+ * Proxy in front of client peer.
  *
  * @param messageProcessor actor to receive Message instances
  *                         (this will typically be handler for the client peers messages)
@@ -120,6 +120,7 @@ class PeerProtocolProcessor(bytesProcessor: ActorRef,
       val bb = ByteString.newBuilder.putLongPart(pm.length, lengthBytes)
       pm.messageId.foreach(mId => bb.putLongPart(mId, idBytes))
       bb ++= pm.body
+      bb.result()
     }
     .toMat(Sink.foreach(bytes => bytesProcessor ! bytes))(Keep.left)
     .run()

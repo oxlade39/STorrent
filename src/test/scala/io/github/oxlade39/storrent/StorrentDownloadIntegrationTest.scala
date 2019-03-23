@@ -31,7 +31,8 @@ class StorrentDownloadIntegrationTest extends TestKit(ActorSystem("StorrentDownl
 
       val fakePeer = system.actorOf(fakeTcpClient(self))
 
-      val download = system.actorOf(Props(new StorrentDownload("examples" / "ubuntu.torrent")), "download")
+      val file = "examples" / "archlinux-2019.03.01-x86_64.iso.torrent"
+      val download = system.actorOf(Props(new StorrentDownload(file)), "download")
 
       Thread.sleep(2.minutes.toMillis)
     }

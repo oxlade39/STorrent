@@ -1,12 +1,14 @@
 package io.github.oxlade39.storrent.peer
 
 import akka.actor._
-import scala.concurrent.{TimeoutException, Future}
+import akka.event.LoggingReceive
+import akka.util.Timeout
+import io.github.oxlade39.storrent.config.Settings
 import io.github.oxlade39.storrent.core.Torrent
 import io.github.oxlade39.storrent.piece.PieceManager
-import akka.util.Timeout
-import akka.event.LoggingReceive
-import concurrent.duration._
+
+import scala.concurrent.duration._
+import scala.concurrent.{Future, TimeoutException}
 
 
 object DownloadWorkPullingPattern {
@@ -21,8 +23,6 @@ object DownloadWorkPullingPattern {
 }
 
 object Downloader2 {
-  val MaxDownloads = 30
-
   case class ConnectedPeerStatus(peerRef: ActorRef,
     peerId: PeerId,
     localStatus: PeerProtocol.PeerStatus,
@@ -35,13 +35,12 @@ object Downloader2 {
 class Downloader2(torrent: Torrent, pieceManager: ActorRef)
   extends Actor with ActorLogging {
 
-  import Downloader2._
+  val settings: Settings = Settings(context.system)
+  val workQueue: ActorRef = context.actorOf(Props[WorkQueue], "workQueue")
+  val workFetcher: ActorRef = context.actorOf(Props(new WorkFetcher(context.parent, pieceManager, workQueue)), "workFetcher")
 
-  val workQueue = context.actorOf(Props[WorkQueue], "workQueue")
-  val workFetcher = context.actorOf(Props(new WorkFetcher(context.parent, pieceManager, workQueue)), "workFetcher")
-
-  val workers = for {
-    index <- 0.until(MaxDownloads)
+  val workers: Seq[ActorRef] = for {
+    index <- 0.until(settings.MaxDownloadWorkers)
   } yield context.actorOf(Props(new DownloadWorker(workQueue, pieceManager, torrent, 10.seconds)), s"worker$index")
 
 
@@ -93,11 +92,12 @@ class WorkFetcher(peerManager: ActorRef,
                   fetchFrequency: FiniteDuration = 10.seconds)
   extends Actor with ActorLogging {
 
-  import Downloader2._
-  import scala.util.{Success => TrySuccess, Failure => TryFailure}
   import DownloadWorkPullingPattern._
+  import Downloader2._
   import akka.pattern.ask
   import context.dispatcher
+
+  import scala.util.{Failure => TryFailure, Success => TrySuccess}
   implicit val timeout = Timeout(10.seconds)
 
   private case object FindWork
@@ -123,7 +123,7 @@ class WorkFetcher(peerManager: ActorRef,
     }
   }
 
-  def findWork: Future[Seq[(Int, Set[DownloadTask])]] = for {
+  def findWork: Future[Seq[Work]] = for {
     connectedPeers <- (peerManager ? PeerManager.GetConnectedPeers).mapTo[PeerManager.ConnectedPeers]
     pieces <- (pieceManager ? PieceManager.GetPeerPieceMappings).mapTo[PieceManager.PeerPieceMappings]
     readyToDownload <- Future.traverse(connectedPeers.connected){ case (peerRef, peer) =>
@@ -157,14 +157,15 @@ class DownloadWorker(workQueue: ActorRef,
   extends Actor with ActorLogging {
   
   import DownloadWorkPullingPattern._
+  val settings: Settings = Settings(context.system)
 
-  override def preStart() = {
+  override def preStart(): Unit = {
     workQueue ! RequestWork
   }
 
   context.setReceiveTimeout(pollFrequency)
 
-  def receive = waitingForWork
+  def receive: Receive = waitingForWork
 
 
   def waitingForWork: Receive = {
@@ -176,9 +177,7 @@ class DownloadWorker(workQueue: ActorRef,
 
     case task: DownloadTask =>
       log.info("beginning work on {}", task)
-      val downloader = context.watch(context.actorOf(PieceDownloader.props(
-        peer = task.peerRef,
-        initialPiece = downloadPiece(task.pieceIndex))))
+      val downloader = context.watch(context.actorOf(pieceDownloader(task), "downloader"))
       context.become(working(task, downloader))
   }
 
@@ -208,10 +207,11 @@ class DownloadWorker(workQueue: ActorRef,
 
   def pieceDownloader(task: DownloadTask): Props = PieceDownloader.props(
     peer = task.peerRef,
-    initialPiece = downloadPiece(task.pieceIndex)
+    initialPiece = downloadPiece(task.pieceIndex),
+    maxPendingRequests = settings.MaxConcurrentRequestsPerPeer
   )
 
-  def downloadPiece(pieceIndex: Int) = {
+  def downloadPiece(pieceIndex: Int): DownloadPiece = {
     val size =
       if (pieceIndex < (torrent.pieceCount - 1)) torrent.pieceSize
       else (torrent.getSize - (torrent.pieceSize * pieceIndex)).toInt
